@@ -6,7 +6,7 @@ var clientsArray = [];
 var i = 0;
 
 app.get('/', function(req, res){  
-  res.sendFile(__dirname + '/client/index.html');
+  res.sendFile(__dirname + '/client/client.html');
 });
 
 io.on('connection', function(socket){  
@@ -15,8 +15,8 @@ io.on('connection', function(socket){
   i++;
 
   socket.on('disconnect', function(){
-    console.log('user ' + this.id + ' has been desconnected... [ ' + i + ' ] users left.');
     i--;
+    console.log('user ' + this.id + ' has been desconnected... [ ' + i + ' ] users left.');
   });
 
   socket.on('clientsList', function(){    
