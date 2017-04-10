@@ -1,8 +1,29 @@
 function GameServer(){
+    this.maxClients = 300;
     this.matches = [];
     this.database = new Database();
+    //socket para o game coordinator.
+    this.gameCoordinator = {
+                                adress: "localhost:3000",
+                                conn: {}   
+                           };
     //clients sockets
     this.waitingList = new List();
+    connectedClientsHash = [];
+
+    
+    
+    // # FAZER TODO TRATAMENTO DE MENSAGENS ENTRE GAMESERVER E GAME COORDINATOR.
+            // TODO -> IMPORTAR SOCKET.IO CLIENT
+            // TENTAR SE CONECTAR COM O GAME COORDINATOR
+                // ENVIAR DADOS DO SERVIDOR PARA O GAME COORDINATOR.
+                // GUARDAR INSTANCIA DO GAMECOORDINATOR PARA ENVIO FREQUENTE DE MENSAGENS.
+
+
+    //COLOCAR CLIENTE NA LISTA DE CLIENTS
+    this.onConnection = function(){
+        //AVISAR CONEXAO DO CLIENTE AO GAME COORDINATOR.
+    }
     
     /*
         
@@ -43,12 +64,12 @@ function GameServer(){
 
                 if( readyToPlay == 3 ) {
                     //pega no banco de dados o ultimo id
-                    var lastMatchId = database.getLastMatchId();
+                    var lastMatchId = database.getLastMatchId() +1;
                     this.matches.add( new Match(lastMatchId, this.waitingList) );
                     this.waitingList.clear();
                 }       
             }
         }
 
-    }  //ON CONNECTION
+    }  //ON READY
 } // SERVER 

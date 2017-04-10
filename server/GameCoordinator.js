@@ -4,7 +4,7 @@ function GameCoordinator(){
     var io      = require('socket.io')(http);
 
     //global
-    clientsArray = [];
+    connectedClientsHash = [];
 
     var i = 0;
 
@@ -24,7 +24,6 @@ function GameCoordinator(){
                             }
                       ];
 
-    // TODO -> IMPORTAR SOCKET.IO CLIENT
     // TODO -> TENTAR E CRIAR OBJETOS CONEXOES COM OS SERVIDORES ATIVOS. DAR ERRO, E ENCERRAR CASO NAO CONSIGA COM PELO MENOS 1.
 
     //ENVIA CLIENTE                  
@@ -34,9 +33,13 @@ function GameCoordinator(){
 
     io.on('connection', function(socket){  
 
-        clientsArray[socket.id] = socket;    
+        connectedClientsHash[socket.id] = socket;    
         console.log( "cliente [ " +  socket.id + " ] conectado." );
-        console.log( "total: " +   Object.keys(clientsArray).length );   
+        console.log( "total: " +   Object.keys(connectedClientsHash).length );   
+        // QUANDO CLIENTE SE CONECTAR
+            // AVISAR QUE CONEXAO FOI BEM SUCEDIDA.
+            // ENVIA LISTA DE SERVIDORES DISPONIVEIS.
+
 
         /* 
            EVENTO: PLAY
@@ -52,7 +55,13 @@ function GameCoordinator(){
         */
         socket.on('PLAY', function(msg){  
             console.log("user: " + this.id + ' send: ' + msg);
-        });      
+        });
+
+        // IDENTIFICA O SOCKET COMO UM SERVIDOR
+        socket.on('SERVER', function(msg){  
+            // GUARDA INFORMÇOES DO SERVIDOR NO ARRAY.
+            // AVISA CLIENTES CONECTADOS QUE EXISTE UM NOVO SERVIDOR DISPONIVEL.
+        });       
 
       
 

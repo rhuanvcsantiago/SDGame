@@ -1,12 +1,13 @@
 function List(){
     
-    this.players    = [];
+    var list    = [];
 
     this.add        = function(){}
     this.remove     = function(i){}
     this.clear      = function(){}
     this.length     = function(){}
     this.get        = function(i){}
+    this.all        = function(){}
 }
 
 function Hash(){

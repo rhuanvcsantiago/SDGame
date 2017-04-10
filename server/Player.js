@@ -6,6 +6,7 @@ function Player(){
                             gameCoordinatorSocket: {},
                             gameServerSocket: {}
                        }
+    this.matchId = "";
 
     this.isAlive = function(){}
     
