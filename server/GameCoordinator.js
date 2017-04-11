@@ -1,28 +1,22 @@
+var myLibs = require('myLibs.js')
+
 function GameCoordinator(){
     var app     = require('express')();  
     var http    = require('http').Server(app);  
     var io      = require('socket.io')(http);
 
     //global
-    connectedClientsHash = [];
+    connectedClientsHash = new Hash();
+    connectedServersHash = new Hash();
+    /*
+        {
+            name: "server01",
+            adress: "127.0.0.1:3001",
+            location: "brazil",
+            connection: {}
+        },
 
-    var i = 0;
-
-    var gameServers = [
-                            {
-                                name: "server01",
-                                adress: "127.0.0.1:3001",
-                                location: "brazil",
-                                connection: {}
-                            },
-                            
-                            {
-                                name: "server02",
-                                adress: "127.0.0.1:3001",
-                                location: "eua",
-                                connection: {}
-                            }
-                      ];
+    */
 
     // TODO -> TENTAR E CRIAR OBJETOS CONEXOES COM OS SERVIDORES ATIVOS. DAR ERRO, E ENCERRAR CASO NAO CONSIGA COM PELO MENOS 1.
 
@@ -33,16 +27,15 @@ function GameCoordinator(){
 
     io.on('connection', function(socket){  
 
-        connectedClientsHash[socket.id] = socket;    
-        console.log( "cliente [ " +  socket.id + " ] conectado." );
-        console.log( "total: " +   Object.keys(connectedClientsHash).length );   
+        console.log( "cliente [ " +  socket.id + " ] conectado. total: " + Object.keys(connectedClientsHash).length);
+        
+        // DEFINICAO -> LOGMESSAGE: Evento para menssagens de log do sistema.
+
         // QUANDO CLIENTE SE CONECTAR
-            // AVISAR QUE CONEXAO FOI BEM SUCEDIDA.
-            // ENVIA LISTA DE SERVIDORES DISPONIVEIS.
+            // LOGMESSAGE-> AVISAR QUE CONEXAO FOI BEM SUCEDIDA.
 
-
-        /* 
-           EVENTO: PLAY
+        socket.on('FINDGAME', function(msg){  
+        /* EVENTO: FINDGAME
 
            - verifica lista de servidores.
            - manda o cliente abrir conexão com outro servidor. ENVIA o objeto Player. 
@@ -51,23 +44,43 @@ function GameCoordinator(){
                    - checa a variavel, senao da erro pro cliente.   
            - cliente deve retornar caso conexao seja vem sucedida. PLAY-ACK.
                - o game-coordinator ao receber o ACK do PLAY, retira o cliente da lista de PLAY-ACK;
-        
         */
-        socket.on('PLAY', function(msg){  
-            console.log("user: " + this.id + ' send: ' + msg);
         });
 
-        // IDENTIFICA O SOCKET COMO UM SERVIDOR
-        socket.on('SERVER', function(msg){  
-            // GUARDA INFORMÇOES DO SERVIDOR NO ARRAY.
-            // AVISA CLIENTES CONECTADOS QUE EXISTE UM NOVO SERVIDOR DISPONIVEL.
-        });       
+        // IDENTIFICA O SOCKET COMO UM SERVIDOR OU CLIENTE
+        // FUTURAMENTE PODE EFETUAR AUTENTICACAO
+        socket.on('LOGIN', function(msg){  
+            
+            if( msg.type == "client" ){
+                // TODO-> Criar OBJ CLIENTE
+                // TODO-> Adicionar msg.name
+                connectedClientsHash.add(this.id, this); 
+            } else {
+                if( msg.type == "server" ){
+                    connectedServersHash.add(this.id, this);   
+                    // TODO-> AVISAR CLIENTES CONECTADOS (BROADCAST) QUE EXISTE UM NOVO SERVIDOR DISPONIVEL. 
+                } else {
+                    // error, nao eh nem cliente, nem servidor.
+                    console.log("EVENT: [ LOGIN ] MSGM: erro, tentativa de login sem ser cliente ou servidor. Favor verificar mensagem de envio");
+                }
+            }
 
-      
+        });    
+
+        socket.on('disconnect', function(){  
+            // QUANDO O CLIENTE DESCONECTAR, VERIFICAR SE ERA SERVIDOR OU CLIENTE            
+            if( connectedClientsHash.get(socket.id) ){
+                connectedClientsHash.remove(socket.id);
+            } else {
+                if( connectedServersHash.get(socket.id) ){
+                    connectedServersHash.remove(socket.id);
+                    // TODO-> AVISAR CLIENTES CONECTADOS (BROADCAST) QUE SERVIDOR CAIU.
+                }
+            }
+
+        });
 
     });
-
-    
 
     http.listen(3000, function(){  
         console.log('servidor rodando em localhost:3000');

@@ -19,7 +19,7 @@ function Hash(){
         if( hash ) 
             this.obj[hash] = value;
         else
-            throw "erro ao adicionar um novo valor ao dicionario hash;";
+            throw "não da pra adicionar um valor [ " + hash + " ] ao dicionario hash;";
     }
 
     this.remove = function(hash){

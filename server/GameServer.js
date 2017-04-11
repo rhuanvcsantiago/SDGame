@@ -1,3 +1,5 @@
+var myLibs = require('myLibs.js')
+
 function GameServer(){
     this.maxClients = 300;
     this.matches = [];
@@ -11,7 +13,6 @@ function GameServer(){
     this.waitingList = new List();
     connectedClientsHash = [];
 
-    
     
     // # FAZER TODO TRATAMENTO DE MENSAGENS ENTRE GAMESERVER E GAME COORDINATOR.
             // TODO -> IMPORTAR SOCKET.IO CLIENT
@@ -73,3 +74,4 @@ function GameServer(){
 
     }  //ON READY
 } // SERVER 
+
