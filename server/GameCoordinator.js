@@ -25,16 +25,16 @@ function GameCoordinator(){
         res.sendFile(__dirname + '/client/client.html');
     });
 
-    io.on('connection', function(socket){  
+    io.on('connection', function( socket ){  
 
-        console.log( "cliente [ " +  socket.id + " ] conectado. total: " + Object.keys(connectedClientsHash).length);
+        console.log( "cliente [ " +  socket.id + " ] conectado. total: " + connectedClientsHash.length()+1 );
         
-        // DEFINICAO -> LOGMESSAGE: Evento para menssagens de log do sistema.
+        // DEFINICAO -> ENVIAR LOGMESSAGE: Evento para menssagens de log do sistema no cliente.
 
         // QUANDO CLIENTE SE CONECTAR
             // LOGMESSAGE-> AVISAR QUE CONEXAO FOI BEM SUCEDIDA.
 
-        socket.on('FINDGAME', function(msg){  
+        socket.on('FINDGAME', function( msg ){  
         /* EVENTO: FINDGAME
 
            - verifica lista de servidores.
@@ -54,10 +54,10 @@ function GameCoordinator(){
             if( msg.type == "client" ){
                 // TODO-> Criar OBJ CLIENTE
                 // TODO-> Adicionar msg.name
-                connectedClientsHash.add(this.id, this); 
+                connectedClientsHash.add( this.id, this ); 
             } else {
                 if( msg.type == "server" ){
-                    connectedServersHash.add(this.id, this);   
+                    connectedServersHash.add( this.id, this );   
                     // TODO-> AVISAR CLIENTES CONECTADOS (BROADCAST) QUE EXISTE UM NOVO SERVIDOR DISPONIVEL. 
                 } else {
                     // error, nao eh nem cliente, nem servidor.
