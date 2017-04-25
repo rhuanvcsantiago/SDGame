@@ -1,4 +1,7 @@
-var myLibs = require('myLibs.js')
+
+var hash     = require('./myLibs.js')
+var player   = require('./Player.js')
+var Database = require('./Database.js')
 
 function GameCoordinator(){
     var app     = require('express')();  
@@ -6,8 +9,8 @@ function GameCoordinator(){
     var io      = require('socket.io')(http);
 
     //global
-    connectedClientsHash = new Hash();
-    connectedServersHash = new Hash();
+    connectedClientsHash = new hash();
+    connectedServersHash = new hash();
     /*
         {
             name: "server01",
@@ -20,16 +23,9 @@ function GameCoordinator(){
 
     // TODO -> TENTAR E CRIAR OBJETOS CONEXOES COM OS SERVIDORES ATIVOS. DAR ERRO, E ENCERRAR CASO NAO CONSIGA COM PELO MENOS 1.
 
-    //ENVIA CLIENTE                  
-    app.get('/', function(req, res){  
-        res.sendFile(__dirname + '/client/client.html');
-    });
-
     io.on('connection', function( socket ){  
 
-        console.log( "cliente [ " +  socket.id + " ] conectado. total: " + connectedClientsHash.length()+1 );
-        socket.emit("info", 'totalClients: ' + i);
-        
+        console.log( "cliente [ " +  socket.id + " ] identificado. total: " + io.engine.clientsCount );        
         // DEFINICAO -> ENVIAR LOGMESSAGE: Evento para menssagens de log do sistema no cliente.
 
         // QUANDO CLIENTE SE CONECTAR
@@ -51,18 +47,37 @@ function GameCoordinator(){
         // IDENTIFICA O SOCKET COMO UM SERVIDOR OU CLIENTE
         // FUTURAMENTE PODE EFETUAR AUTENTICACAO
         socket.on('LOGIN', function(msg){  
-            
-            if( msg.type == "player" ){
-                // TODO-> Criar OBJ CLIENTE
-                // TODO-> Adicionar msg.name
-                connectedClientsHash.add( this.id, new Player(msg.name, this) ); 
+           
+            var msgObj = JSON.parse(msg);
+            var response = {}
+           
+            if( msgObj.type == "player" ){                   
+               
+                connectedClientsHash.add( socket.id, new player( msgObj.data, this ) ); 
+                console.log( "cliente [" +  socket.id + "][" +  msgObj.data + "] conectado. total: " +  connectedClientsHash.length() );
+                
+                response = {
+                                type: "1",
+                                data: socket.id
+                            }
+
+                socket.emit("LOGIN_ACK", JSON.stringify(response) );
+
             } else {
-                if( msg.type == "server" ){
+                if( msgObj.type == "server" ){
                     connectedServersHash.add( this.id, this );   
                     // TODO-> AVISAR CLIENTES CONECTADOS (BROADCAST) QUE EXISTE UM NOVO SERVIDOR DISPONIVEL. 
                 } else {
                     // error, nao eh nem cliente, nem servidor.
-                    console.log("EVENT: [ LOGIN ] MSGM: erro, tentativa de login sem ser cliente ou servidor. Favor verificar mensagem de envio");
+                    var errorMsgm = "EVENT: [ LOGIN ] MSGM: erro, tentativa de login sem ser cliente ou servidor. Favor verificar mensagem de envio";
+
+                    response = {
+                                type: "0",
+                                data: errorMsgm
+                            }
+
+                    socket.emit("LOGIN_ACK", response);
+                    console.log(errorMsgm);
                 }
             }
 
@@ -72,13 +87,18 @@ function GameCoordinator(){
             // QUANDO O CLIENTE DESCONECTAR, VERIFICAR SE ERA SERVIDOR OU CLIENTE            
             if( connectedClientsHash.get(socket.id) ){
                 connectedClientsHash.remove(socket.id);
+                console.log( "cliente [ " +  socket.id + " ] desconectado. total: " + io.engine.clientsCount );
             } else {
                 if( connectedServersHash.get(socket.id) ){
                     connectedServersHash.remove(socket.id);
                     // TODO-> AVISAR CLIENTES CONECTADOS (BROADCAST) QUE SERVIDOR CAIU.
                 }
             }
+        });
 
+         socket.on('EVAL', function(message){  
+           console.log( eval(message) ); 
+           //socket.emit("EVAL_ACK", response);  
         });
 
     });
@@ -86,48 +106,26 @@ function GameCoordinator(){
     http.listen(3000, function(){  
         console.log('servidor rodando em localhost:3000');
     });
+
+    app.get('/', function(req, res){  
+        res.sendFile(__dirname + '/client/client.html');
+    });
+
+    app.get('*.js', function(req, res){ 
+        res.sendFile(__dirname + '/client/' + req.originalUrl );  
+    });
+
+    app.get('*.jpg', function(req, res){ 
+        res.sendFile(__dirname + '/client/' + req.originalUrl );  
+    });
+
+
+    app.get('*.css', function(req, res){ 
+        res.sendFile(__dirname + '/client/' + req.originalUrl );  
+    });
 }
 
 var gc = new GameCoordinator();
 
-/*
-        io.of('/chat').in('general').clients(function(error, clients){
-        if (error) throw error;
-        console.log(clients); // => [Anw2LatarvGVVXEIAAAD]
-        });
 
-        socket.on('messageTo', function(sendToObject){
-            var targetClientId = sendToObject.targetClientId;  
-            var msgm = sendToObject.msgm;
-
-            console.log('totalClients:');
-        });
-        
-        socket.on('message', function(msg){  
-            console.log("user: " + this.id + ' send: ' + msg);
-        });
-
-        socket.on("echo", function(msg){
-            console.log("user: " + this.id + ' is sending a echo msgm: ' + msg);
-            socket.emit("message", msg);
-        });
-        
-        socket.on('totalClients', function(){  
-            console.log('totalClients: ' + i);
-            socket.emit("message", 'totalClients: ' + i);
-        });
-
-        socket.on('disconnect', function(){
-            i--;
-            console.log('user ' + this.id + ' has been desconnected... [ ' + i + ' ] users left.');
-        });
-
-        socket.on('clientsList', function(){    
-            io.clients(function(error, clients){
-            if (error) throw error;
-            console.log(clients); 
-            });
-        
-        });
-    */
 

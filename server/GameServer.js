@@ -1,4 +1,4 @@
-var myLibs = require('myLibs.js')
+var myLibs   = require('./myLibs.js')
 
 function GameServer(){
     this.maxClients = 300;
@@ -74,4 +74,6 @@ function GameServer(){
 
     }  //ON READY
 } // SERVER 
+
+//var gameServer = new GameServer();
 

@@ -1,15 +1,3 @@
-function List(){
-    
-    var list    = [];
-
-    this.add        = function(){}
-    this.remove     = function(i){}
-    this.clear      = function(){}
-    this.length     = function(){}
-    this.get        = function(i){}
-    this.all        = function(){}
-}
-
 function Hash(){
     
     this.obj = {};
@@ -41,3 +29,4 @@ function Hash(){
 
 }
 
+module.exports = Hash;

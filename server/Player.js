@@ -11,3 +11,5 @@ function Player(name, gcSocket){
     this.isAlive = function(){}
     
 }
+
+module.exports = Player;
