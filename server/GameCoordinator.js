@@ -28,6 +28,7 @@ function GameCoordinator(){
     io.on('connection', function( socket ){  
 
         console.log( "cliente [ " +  socket.id + " ] conectado. total: " + connectedClientsHash.length()+1 );
+        socket.emit("info", 'totalClients: ' + i);
         
         // DEFINICAO -> ENVIAR LOGMESSAGE: Evento para menssagens de log do sistema no cliente.
 
@@ -51,10 +52,10 @@ function GameCoordinator(){
         // FUTURAMENTE PODE EFETUAR AUTENTICACAO
         socket.on('LOGIN', function(msg){  
             
-            if( msg.type == "client" ){
+            if( msg.type == "player" ){
                 // TODO-> Criar OBJ CLIENTE
                 // TODO-> Adicionar msg.name
-                connectedClientsHash.add( this.id, this ); 
+                connectedClientsHash.add( this.id, new Player(msg.name, this) ); 
             } else {
                 if( msg.type == "server" ){
                     connectedServersHash.add( this.id, this );   

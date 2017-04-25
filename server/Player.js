@@ -1,16 +1,13 @@
-function Player(){
-    this.name        = "";
-    this.sessionId   = "";
+function Player(name, gcSocket){
+    this.name        = name;
     this.databaseId  = "";
     this.connections = {
-                            gameCoordinatorSocket: {},
+                            gameCoordinatorSocket: gcSocket,
                             gameServerSocket: {}
                        }
-    this.matchId = "";
+
+    this.currentMatchId = "";
 
     this.isAlive = function(){}
     
-    this.addConnection = function(){
-
-    }
 }

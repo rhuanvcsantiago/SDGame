@@ -2,4 +2,67 @@ PREMISSAS DO MVP
     - não terá CADASTRO de usuário.
         - nome do usuário será o identificador de salvamento no banco.
         - sem tratamento para usuários duplicados.
+
+
+
+PROTOCOLO DE COMUNICACAO ENTRE CLIENTE E SERVIDOR
+
+:::::: CLIENTE ::::::
+
+ - RECEBE 
+    -> INFO  
+        - ESCREVE NO CONSOLE
+
+    -> SERVER_LIST_UPDATE -> JSON.stringify( connectedServersHash )
+        - ATUALIZA LISTA DE SERVERS -> JSON.parse( connectedServersHash )
+
+    -> LOGIN_ACK -> 0 {type:"0", data: "erros description"} || 1 {type:"1", data: "client_id"}
+        - SE 0 
+            - FALHA NO LOGIN.
+            - MANTER A TELA E EMITIR ERRO.
+        - SE 1 
+            - LOGIN EFETUADO COM SUCESSO.
+            - MOSTRA ID DO CLIENTE E MOSTRA MENSAGEM DE SUCESSO.
+            - TROCAR A TELA: TELA 2
+
+- ENVIA 
+    -> LOGIN -> {type:"player", data: "PLAYER_NAME"}
+
+:::::: GC SERVER ::::::
+
+- RECEBE
+    -> LOGIN
+        - REGISTRAR NOME DO JOGADOR E SOCKET NA LISTA DE CLIENTES.
+        - SE ERRO
+            - EMITE 
+                -> LOGIN_ACK -> {type:"0", data: "erros description"}
+        - SE NAO
+            - EMITE 
+                -> LOGIN_ACK -> {type:"1", data: "client_id"}
+                -> SERVER_LIST_UPDATE -> JSON.stringify( connectedServersHash );        
+            
+- CONNECTION
+    - EMITE 
+        -> INFO -> CONEXAO COM GC BEM SUCEDIDA.
+
+- DISCONNECTION
+    - REMOVE CLIENTE DA LISTA
+
+
+
+
+:::::: CLIENTE TELA 1 ::::::
+- mostra logo do game
+- mostra campo para colocar nome
+
+
+
+:::::: CLIENTE TELA 2 ::::::
+- mostra dados do player
+    - nome
+    - id
+- mostra lista de servidores
+- mostra botao PLAY
+
+
     
