@@ -11,16 +11,45 @@ function GameCoordinator(){
     //global
     connectedClientsHash = new hash();
     connectedServersHash = new hash();
+
+    connectedServersHash.add("kjkgSDggk3D124Asdasad", {
+            name: "server01",
+            adress: "127.0.0.1:3001",
+            location: "brazil",
+            connection: {}
+    });
+
+    connectedServersHash.add("kikkglko3334Asda3hfa", {
+            name: "server02",
+            adress: "127.0.0.1:3001",
+            location: "brazil",
+            connection: {}
+    });
+
+    connectedServersHash.add("ki234234kkglko3334Asda3hfa", {
+            name: "server03",
+            adress: "127.0.0.1:3001",
+            location: "brazil",
+            connection: {}
+    });
+
+    connectedServersHash.add("kik234234kglko3334Asda3hfa", {
+            name: "server04",
+            adress: "127.0.0.1:3001",
+            location: "brazil",
+            connection: {}
+    });
+
     /*
         {
             name: "server01",
             adress: "127.0.0.1:3001",
             location: "brazil",
             connection: {}
-        },
+        }
 
     */
-
+    
     // TODO -> TENTAR E CRIAR OBJETOS CONEXOES COM OS SERVIDORES ATIVOS. DAR ERRO, E ENCERRAR CASO NAO CONSIGA COM PELO MENOS 1.
 
     io.on('connection', function( socket ){  
@@ -56,25 +85,27 @@ function GameCoordinator(){
                 connectedClientsHash.add( socket.id, new player( msgObj.data, this ) ); 
                 console.log( "cliente [" +  socket.id + "][" +  msgObj.data + "] conectado. total: " +  connectedClientsHash.length() );
                 
-                response = {
+                response =  {
                                 type: "1",
-                                data: socket.id
+                                data:socket.id
                             }
 
                 socket.emit("LOGIN_ACK", JSON.stringify(response) );
+                socket.emit("SERVER_LIST_UPDATE", JSON.stringify( connectedServersHash.getList() ) );
 
             } else {
                 if( msgObj.type == "server" ){
-                    connectedServersHash.add( this.id, this );   
-                    // TODO-> AVISAR CLIENTES CONECTADOS (BROADCAST) QUE EXISTE UM NOVO SERVIDOR DISPONIVEL. 
+                    connectedServersHash.add( socket.id, this );  
+                    console.log("servidor: [ " + msgObj.data + " ] connected." ); 
+                    io.emit("SERVER_LIST_UPDATE", JSON.stringify( connectedServersHash.getList() ) );
                 } else {
                     // error, nao eh nem cliente, nem servidor.
                     var errorMsgm = "EVENT: [ LOGIN ] MSGM: erro, tentativa de login sem ser cliente ou servidor. Favor verificar mensagem de envio";
 
-                    response = {
-                                type: "0",
-                                data: errorMsgm
-                            }
+                    response =  {
+                                    type: "0",
+                                    data: errorMsgm
+                                }
 
                     socket.emit("LOGIN_ACK", response);
                     console.log(errorMsgm);
@@ -86,8 +117,10 @@ function GameCoordinator(){
         socket.on('disconnect', function(){  
             // QUANDO O CLIENTE DESCONECTAR, VERIFICAR SE ERA SERVIDOR OU CLIENTE            
             if( connectedClientsHash.get(socket.id) ){
+                // LANCAR FUNCAO QUE REMOVE CLIENTE APOS 30 segundos
                 connectedClientsHash.remove(socket.id);
                 console.log( "cliente [ " +  socket.id + " ] desconectado. total: " + io.engine.clientsCount );
+
             } else {
                 if( connectedServersHash.get(socket.id) ){
                     connectedServersHash.remove(socket.id);
@@ -98,7 +131,6 @@ function GameCoordinator(){
 
          socket.on('EVAL', function(message){  
            console.log( eval(message) ); 
-           //socket.emit("EVAL_ACK", response);  
         });
 
     });
@@ -118,7 +150,6 @@ function GameCoordinator(){
     app.get('*.jpg', function(req, res){ 
         res.sendFile(__dirname + '/client/' + req.originalUrl );  
     });
-
 
     app.get('*.css', function(req, res){ 
         res.sendFile(__dirname + '/client/' + req.originalUrl );  

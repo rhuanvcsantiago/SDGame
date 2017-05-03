@@ -25,28 +25,40 @@
     </script>
 
     <body>
-
-        <div id="login" class="container">
-            <div class="row">
-                <div class="col">
-                    <div class="container"> 
-                        <div class="form-group">
-                           <h1 class="text-center"> 
-                               <label for="playerName">your name</label>
-                           </h1>
-                            <input id="nameLabel" class="form-control input-sm" id="playerName" type="text">
-                            <button id="buttonPlay" type="button" class="btn btn-danger btn-lg pull-right">play motherfucker!</button>
+        <div class="container" id="wrapper">
+            
+            <div id="login" class="container">
+                <div class="row">
+                    <div class="col-md-12 text-center"> 
+                        <div class="container"> 
+                            <div class="form-group">
+                            <h1 class="text-center"> 
+                                <label for="playerName">your name</label>
+                            </h1>
+                                <input id="nameLabel" class="form-control input-sm" id="playerName" type="text">
+                                <br />
+                                <button id="buttonPlay" type="button" class="btn btn-danger btn-lg pull-right">ENTRAR</button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div id="start" class="container" style="background-color: green">
-            <h1> start </h1>
-        </div>
-        <div id="match" class="container" style="background-color: red">
-            <h1> match </h1>
-        </div>
+            <div id="start" class="container" style="background-color: green">
+                <h3> SERVER LIST </h3>
+                <div id="serverList" class="row" style="background-color: lightgray">
+                </div>
+                <br/>
+                <div id="startGame"  class="row text-center">
+                    <div class="col-md-12 text-center"> 
+                        <button id="buttonPlay" type="button" class="btn btn-danger btn-lg"> PROCURAR PARTIDA </button>
+                    </div>    
+                </div>
+            </div>
+            <div id="match" class="container" style="background-color: red">
+                <h1> match </h1>
+            </div>
+            
+        </div>     
     </body>
 
     <!-- Custom -->

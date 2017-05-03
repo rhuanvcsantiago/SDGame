@@ -3,7 +3,7 @@ function Player(){
     this.socket = {
                     gameCoordinator: {},
                     gameServer: {}
-                }       
+                  }       
 }
 
 var _PLAYER;
@@ -32,16 +32,46 @@ function initialize(){
    
     try {
         _PLAYER.socket.gameCoordinator = io();
+        
+        _PLAYER.socket.gameCoordinator.on('LOGIN_ACK', function(msg){
+            
+            var msgObj = JSON.parse( msg );
 
-        _PLAYER.socket.on('LOGIN_ACK', function(msg){
-                //code
-        });    
+            if( msgObj.type == 1 )
+                setScene( _SCENE_START );
+
+            console.log("logado com sucesso player: " + msg );
+        });  
+
+        _PLAYER.socket.gameCoordinator.on('SERVER_LIST_UPDATE', function(msg){
+            var msgObj = JSON.parse( msg );
+
+            updateServerList(msgObj.obj);
+            
+               // showMessage("Erro no UPDATE da SERVER LIST", "danger"); 
+        });  
     }
     catch(err){
         showInfo(err + "\n Game coordinator offline."); 
     }  
 
-    setScene(_SCENE_LOGIN);
+    setScene( _SCENE_LOGIN );
+
+}
+
+function updateServerList(data){
+
+    $("#serverList").empty();
+    console.log( data );
+    
+    var arrayProperties = Object.getOwnPropertyNames(data);
+
+    for(var i=0; i< arrayProperties.length; i++){
+        var serverData = data[ arrayProperties[i] ];
+        $("#serverList").append('<div id="'+serverData.name+'" class="serverBox"> <ul><li>'+serverData.name+'</li><li>'+serverData.location+'</li><li>'+serverData.adress+'</li><ul> </div>')        
+    }
+    // for ever element in array
+    //$("#serverList").append('<div id="server01" class="serverBox"> </div>');
 
 }
 
@@ -59,7 +89,7 @@ function setScene(sceneName, vel){
 
 $(_SCENE_LOGIN).on("click", "#buttonPlay", function(){
 
-    var loginObj = {
+    var loginObj =  {
                         type: "player",
                         data: $("#nameLabel").val()
                     };
@@ -67,12 +97,30 @@ $(_SCENE_LOGIN).on("click", "#buttonPlay", function(){
     if ( loginObj.data != "" ) 
         _PLAYER.socket.gameCoordinator.emit("LOGIN", JSON.stringify(loginObj) );
     else {
-        $("#login").append("<div class='alert alert-danger'>preencha algum nick</div>");
+        showMessage("Preencha algum nick", "danger");
     }    
 });
 
-function eval(code){
+function eval2(code){
     _PLAYER.socket.gameCoordinator.emit("EVAL", code );
+}
+
+function showMessage(msg, type){
+
+    var type = type || "";
+    var msg  = msg  || "";
+
+
+    if(type == "danger"){ 
+        $("#wrapper").append("<div class='alert alert-danger'>"+ msg +"</div>");
+    }
+    else if (type == "warning") {
+        $("#wrapper").append("<div class='alert alert-warning'>"+ msg +"</div>");
+    } else {
+        $("#wrapper").append("<div class='alert alert-info'>"+ msg +"</div>");
+    }   
+            
+        
 }
 
 initialize();

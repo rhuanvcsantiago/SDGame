@@ -27,6 +27,10 @@ function Hash(){
         return this.obj[hash];
     }
 
+    this.getList = function(){
+        return Object.keys( this.obj );    
+    }
+
 }
 
 module.exports = Hash;
