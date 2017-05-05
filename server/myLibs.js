@@ -1,4 +1,4 @@
-function Hash(){
+function ClientList(){
     
     this.obj = {};
 
@@ -27,8 +27,19 @@ function Hash(){
         return this.obj[hash];
     }
 
-    this.getList = function(){
+    this.getAll= function(){
         return Object.keys( this.obj );    
+    }
+
+    this.getAllAsList= function(){
+        
+        var list = [];
+
+        for (var key in this.object) {
+
+        }
+
+        return list;    
     }
 
 }

@@ -1,65 +1,93 @@
+var app     = require('express')();  
+var http    = require('http').Server(app);  
+var io      = require('socket.io')(http);
 
-var hash     = require('./myLibs.js')
-var player   = require('./Player.js')
-var Database = require('./Database.js')
+function ConnectionList(){
+    
+    this.client = {};
 
-function GameCoordinator(){
-    var app     = require('express')();  
-    var http    = require('http').Server(app);  
-    var io      = require('socket.io')(http);
+    this.add = function(id, value){
+        
+        if( id ) 
+            this.client[id] = value;
+        else
+            throw "Não da pra adicionar um valor [ " + id + " ] ao dicionario hash;";
+    }
 
-    //global
-    connectedClientsHash = new hash();
-    connectedServersHash = new hash();
+    this.remove = function(id){
+        delete this.client[id];
+    }
+    
+    this.clear = function(){
+        delete this.client;
+        this.client = {};
+    }
 
-    connectedServersHash.add("kjkgSDggk3D124Asdasad", {
-            name: "server01",
-            adress: "127.0.0.1:3001",
-            location: "brazil",
-            connection: {}
-    });
+    this.length = function(){
+        return Object.keys( this.client ).length;
+    }
 
-    connectedServersHash.add("kikkglko3334Asda3hfa", {
-            name: "server02",
-            adress: "127.0.0.1:3001",
-            location: "brazil",
-            connection: {}
-    });
+    this.get  = function(id){
+        return this.client[id];
+    }
 
-    connectedServersHash.add("ki234234kkglko3334Asda3hfa", {
-            name: "server03",
-            adress: "127.0.0.1:3001",
-            location: "brazil",
-            connection: {}
-    });
+    this.getAll= function(){        
+        return Object.values(this.client);  
+    } 
 
-    connectedServersHash.add("kik234234kglko3334Asda3hfa", {
-            name: "server04",
-            adress: "127.0.0.1:3001",
-            location: "brazil",
-            connection: {}
-    });
+    this.broadcast = function(evt, msg){        
+        for (var key in this.client) {
+            this.client[key].socket.emit(evt, msg);     
+        }
+    } 
 
-    /*
-        {
-            name: "server01",
-            adress: "127.0.0.1:3001",
-            location: "brazil",
-            connection: {}
+    this.getData  = function(id){
+        return this.client[id].data;
+    }
+
+    this.getAllData = function(evt, msg){        
+        var array = [];
+        
+        for (var key in this.client) {
+            array.push( this.client[key].data );         
         }
 
-    */
-    
-    // TODO -> TENTAR E CRIAR OBJETOS CONEXOES COM OS SERVIDORES ATIVOS. DAR ERRO, E ENCERRAR CASO NAO CONSIGA COM PELO MENOS 1.
+        return array;
+    }   
 
+}
+
+function Player(name, socket){
+    this.data = {
+                    name: name || ""
+                }
+    this.socket = socket;
+}
+
+function GameServer(name, ip, location, socket){
+
+    this.data = {
+                    name: name || "",
+                    ip: ip || "",
+                    location: location || ""
+                }  
+    this.socket = socket;
+}
+
+function GameCoordinator(){
+    
+    var clientList = new ConnectionList();
+    var serverList = new ConnectionList();
+
+    // serverList.add( "kjlolDggk3D124Asdasad", new GameServer("server01", "177.1.8.1:3001", "brazil", {} ));
+    // serverList.add( "o123SDggk3Drhfdg2asad", new GameServer("server02", "156.7.2.1:3001", "america", {} ));
+    // serverList.add( "njkjftyhsgk3D1244asad", new GameServer("server14", "176.8.2.1:3001", "china", {} ));
+    
     io.on('connection', function( socket ){  
 
-        console.log( "cliente [ " +  socket.id + " ] identificado. total: " + io.engine.clientsCount );        
+        console.log( "cliente [ " +  socket.id + " ] conectado. total: " + io.engine.clientsCount );       
         // DEFINICAO -> ENVIAR LOGMESSAGE: Evento para menssagens de log do sistema no cliente.
-
-        // QUANDO CLIENTE SE CONECTAR
-            // LOGMESSAGE-> AVISAR QUE CONEXAO FOI BEM SUCEDIDA.
-
+    
         socket.on('FINDGAME', function( msg ){  
         /* EVENTO: FINDGAME
 
@@ -78,62 +106,74 @@ function GameCoordinator(){
         socket.on('LOGIN', function(msg){  
            
             var msgObj = JSON.parse(msg);
-            var response = {}
+            var resObj = {}
            
             if( msgObj.type == "player" ){                   
                
-                connectedClientsHash.add( socket.id, new player( msgObj.data, this ) ); 
-                console.log( "cliente [" +  socket.id + "][" +  msgObj.data + "] conectado. total: " +  connectedClientsHash.length() );
+                clientList.add( socket.id, new Player( msgObj.data.name, this ) ); 
+                console.log( "cliente [" +  socket.id + "] identificado como PLAYER: [" +  msgObj.data.name + "]. total players: " +  clientList.length() );
                 
-                response =  {
-                                type: "1",
-                                data:socket.id
-                            }
+                resObj = {
+                            ack: "1",
+                            data: socket.id
+                         }
+                        
+                //sending server list         
+                socket.emit( "SERVER_LIST_UPDATE", JSON.stringify( serverList.getAllData() ) );         
 
-                socket.emit("LOGIN_ACK", JSON.stringify(response) );
-                socket.emit("SERVER_LIST_UPDATE", JSON.stringify( connectedServersHash.getList() ) );
+            } else if( msgObj.type == "server" ) {
+
+                serverList.add( socket.id, new GameServer(msgObj.data.name, msgObj.data.ip, msgObj.data.location, this) );  
+                console.log( "cliente [" +  socket.id + "] identificado como SERVER: [" +  msgObj.data.location + "]. total servers: " +  serverList.length() );
+                
+                sendServerListToAllPlayers();
+
+                resObj = {
+                            ack: "1",
+                            data: socket.id
+                         }
 
             } else {
-                if( msgObj.type == "server" ){
-                    connectedServersHash.add( socket.id, this );  
-                    console.log("servidor: [ " + msgObj.data + " ] connected." ); 
-                    io.emit("SERVER_LIST_UPDATE", JSON.stringify( connectedServersHash.getList() ) );
-                } else {
-                    // error, nao eh nem cliente, nem servidor.
-                    var errorMsgm = "EVENT: [ LOGIN ] MSGM: erro, tentativa de login sem ser cliente ou servidor. Favor verificar mensagem de envio";
+               
+                var errorMsgm = "ERRO! cliente [" +  socket.id + "] tentou fazer login como: [" +  msgObj.data.name + "].";
 
-                    response =  {
-                                    type: "0",
-                                    data: errorMsgm
-                                }
+                resObj =  {
+                             ack: "0",
+                             data: errorMsgm
+                          }
 
-                    socket.emit("LOGIN_ACK", response);
-                    console.log(errorMsgm);
-                }
+                console.log(errorMsgm);
             }
+
+            socket.emit("LOGIN_ACK", JSON.stringify(resObj) );
 
         });    
 
         socket.on('disconnect', function(){  
             // QUANDO O CLIENTE DESCONECTAR, VERIFICAR SE ERA SERVIDOR OU CLIENTE            
-            if( connectedClientsHash.get(socket.id) ){
+            if( clientList.get(socket.id) ){
                 // LANCAR FUNCAO QUE REMOVE CLIENTE APOS 30 segundos
-                connectedClientsHash.remove(socket.id);
-                console.log( "cliente [ " +  socket.id + " ] desconectado. total: " + io.engine.clientsCount );
+                clientList.remove(socket.id);
+                console.log( "cliente [ " +  socket.id + " ] desconectado. total clients: " + clientList.length() );
 
             } else {
-                if( connectedServersHash.get(socket.id) ){
-                    connectedServersHash.remove(socket.id);
-                    // TODO-> AVISAR CLIENTES CONECTADOS (BROADCAST) QUE SERVIDOR CAIU.
+                if( serverList.get(socket.id) ){
+                    serverList.remove(socket.id);
+                    sendServerListToAllPlayers();
+                    console.log( "server [ " +  socket.id + " ] desconectado. total servers: " + serverList.length() );
                 }
             }
         });
 
-         socket.on('EVAL', function(message){  
+        socket.on('EVAL', function(message){  
            console.log( eval(message) ); 
         });
 
     });
+
+    function sendServerListToAllPlayers(){
+        clientList.broadcast( "SERVER_LIST_UPDATE", JSON.stringify( serverList.getAllData() ) );
+    }    
 
     http.listen(3000, function(){  
         console.log('servidor rodando em localhost:3000');

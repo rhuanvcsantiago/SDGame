@@ -35,20 +35,25 @@ function initialize(){
         
         _PLAYER.socket.gameCoordinator.on('LOGIN_ACK', function(msg){
             
-            var msgObj = JSON.parse( msg );
+            var serverResponse = JSON.parse( msg );
 
-            if( msgObj.type == 1 )
+            if( serverResponse.ack == 1 ) {
                 setScene( _SCENE_START );
+                console.log("logado com sucesso player: " + serverResponse.data );
+            } 
 
-            console.log("logado com sucesso player: " + msg );
+            if( serverResponse.ack == 0 ) {
+                console.log("ERROR: " + serverResponse.data );
+            }   
+            
         });  
 
         _PLAYER.socket.gameCoordinator.on('SERVER_LIST_UPDATE', function(msg){
-            var msgObj = JSON.parse( msg );
-
-            updateServerList(msgObj.obj);
             
-               // showMessage("Erro no UPDATE da SERVER LIST", "danger"); 
+            var serverList = JSON.parse( msg );
+
+            updateServerList(serverList);
+            
         });  
     }
     catch(err){
@@ -59,19 +64,16 @@ function initialize(){
 
 }
 
-function updateServerList(data){
+function updateServerList(serverList){
 
     $("#serverList").empty();
-    console.log( data );
-    
-    var arrayProperties = Object.getOwnPropertyNames(data);
+    console.log( "lista de servers:" );
+    console.log( serverList );
 
-    for(var i=0; i< arrayProperties.length; i++){
-        var serverData = data[ arrayProperties[i] ];
-        $("#serverList").append('<div id="'+serverData.name+'" class="serverBox"> <ul><li>'+serverData.name+'</li><li>'+serverData.location+'</li><li>'+serverData.adress+'</li><ul> </div>')        
+    for(var i=0; i< serverList.length; i++){
+        $("#serverList").append('<div id="'+serverList[i].name+'" class="serverBox"> <ul><li>'+serverList[i].name+'</li><li>'+serverList[i].location+'</li><li>'+serverList[i].ip+'</li><ul> </div>');        
     }
-    // for ever element in array
-    //$("#serverList").append('<div id="server01" class="serverBox"> </div>');
+  
 
 }
 
@@ -91,7 +93,9 @@ $(_SCENE_LOGIN).on("click", "#buttonPlay", function(){
 
     var loginObj =  {
                         type: "player",
-                        data: $("#nameLabel").val()
+                        data: { 
+                                name: $("#nameLabel").val()
+                              }
                     };
     
     if ( loginObj.data != "" ) 
@@ -109,7 +113,6 @@ function showMessage(msg, type){
 
     var type = type || "";
     var msg  = msg  || "";
-
 
     if(type == "danger"){ 
         $("#wrapper").append("<div class='alert alert-danger'>"+ msg +"</div>");
