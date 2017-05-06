@@ -1,34 +1,47 @@
-var myLibs   = require('./myLibs.js');
+var ConnectionList  = require('./myLibs.js');
 var ioc      = require('socket.io-client');
 var app      = require('express')();  
 var http     = require('http').Server(app);  
 var io       = require('socket.io')(http);
  
-function GameServer(){
+function GameServer(name, ip, location){
+    
+    this.data = {
+                  name: name || "",
+                  ip: ip || "",
+                  location: location || ""
+                }
+
     this.maxClients = 300;
     this.matches = [];
     //this.database = new Database();
     //socket para o game coordinator.
-    this.gameCoordinator = {
-                                adress: "http://127.0.0.1:3000",
-                                socket: {}   
-                           };
+    
     //clients sockets
     //this.waitingList = new List();
-    connectedClientsHash = [];
+    var connectedClientsHash = [];
 
-    
-    // # FAZER TODO TRATAMENTO DE MENSAGENS ENTRE GAMESERVER E GAME COORDINATOR.
-            // TODO -> IMPORTAR SOCKET.IO CLIENT
-            // TENTAR SE CONECTAR COM O GAME COORDINATOR
-                // ENVIAR DADOS DO SERVIDOR PARA O GAME COORDINATOR.
-                // GUARDAR INSTANCIA DO GAMECOORDINATOR PARA ENVIO FREQUENTE DE MENSAGENS.
+    this.gameCoordinator = { 
+                              data: { 
+                                      ip: "http://127.0.0.1:3000"
+                                    },
+                              socket: {}   
+                           };
+
+    this.gameCoordinator.socket = ioc( this.gameCoordinator.data.ip );
+
+    var loginObj = { ack: "server",
+                     data: this.data }
+
+    this.gameCoordinator.socket.send("LOGIN", JSON.stringify( loginObj ) );                       
+
     io.on('connection', function( socket ){
+        
+        socket.on('EVENT', function( msg ){
+
+        });   
 
     });  
-
-    this.gameCoordinator.socket = ioc( this.gameCoordinator.adress );
-    this.gameCoordinator.socket.send("LOGIN", "{type:server}");
 
     http.listen(3001, function(){  
         console.log('servidor rodando em localhost:3001');

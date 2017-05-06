@@ -1,47 +1,56 @@
-function ClientList(){
+function ConnectionList(){
     
-    this.obj = {};
+    this.client = {};
 
-    this.add = function(hash, value){
+    this.add = function(id, value){
         
-        if( hash ) 
-            this.obj[hash] = value;
+        if( id ) 
+            this.client[id] = value;
         else
-            throw "não da pra adicionar um valor [ " + hash + " ] ao dicionario hash;";
+            throw "Não da pra adicionar um valor [ " + id + " ] ao dicionario hash;";
     }
 
-    this.remove = function(hash){
-        delete this.obj[hash];
+    this.remove = function(id){
+        delete this.client[id];
     }
     
     this.clear = function(){
-        delete this.obj;
-        this.obj = {};
+        delete this.client;
+        this.client = {};
     }
 
     this.length = function(){
-        return Object.keys( this.obj ).length;
+        return Object.keys( this.client ).length;
     }
 
-    this.get  = function(hash){
-        return this.obj[hash];
+    this.get  = function(id){
+        return this.client[id];
     }
 
-    this.getAll= function(){
-        return Object.keys( this.obj );    
+    this.getAll= function(){        
+        return Object.values(this.client);  
+    } 
+
+    this.broadcast = function(evt, msg){        
+        for (var key in this.client) {
+            this.client[key].socket.emit(evt, msg);     
+        }
+    } 
+
+    this.getData  = function(id){
+        return this.client[id].data;
     }
 
-    this.getAllAsList= function(){
+    this.getAllData = function(evt, msg){        
+        var array = [];
         
-        var list = [];
-
-        for (var key in this.object) {
-
+        for (var key in this.client) {
+            array.push( this.client[key].data );         
         }
 
-        return list;    
-    }
+        return array;
+    }   
 
 }
 
-module.exports = Hash;
+module.exports = ConnectionList;

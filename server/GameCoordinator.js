@@ -1,77 +1,30 @@
+var ConnectionList  = require('./myLibs.js');
 var app     = require('express')();  
 var http    = require('http').Server(app);  
 var io      = require('socket.io')(http);
 
-function ConnectionList(){
-    
-    this.client = {};
-
-    this.add = function(id, value){
-        
-        if( id ) 
-            this.client[id] = value;
-        else
-            throw "Não da pra adicionar um valor [ " + id + " ] ao dicionario hash;";
-    }
-
-    this.remove = function(id){
-        delete this.client[id];
-    }
-    
-    this.clear = function(){
-        delete this.client;
-        this.client = {};
-    }
-
-    this.length = function(){
-        return Object.keys( this.client ).length;
-    }
-
-    this.get  = function(id){
-        return this.client[id];
-    }
-
-    this.getAll= function(){        
-        return Object.values(this.client);  
-    } 
-
-    this.broadcast = function(evt, msg){        
-        for (var key in this.client) {
-            this.client[key].socket.emit(evt, msg);     
-        }
-    } 
-
-    this.getData  = function(id){
-        return this.client[id].data;
-    }
-
-    this.getAllData = function(evt, msg){        
-        var array = [];
-        
-        for (var key in this.client) {
-            array.push( this.client[key].data );         
-        }
-
-        return array;
-    }   
-
-}
-
 function Player(name, socket){
     this.data = {
-                    name: name || ""
+                    id: "",
+                    name: name || "",
+                    currentGameServerIp: ""
                 }
+
     this.socket = socket;
+    this.data.id = socket.id || "";
 }
 
 function GameServer(name, ip, location, socket){
 
     this.data = {
+                    id: "",
                     name: name || "",
                     ip: ip || "",
                     location: location || ""
                 }  
+
     this.socket = socket;
+    this.data.id = socket.id || "";
 }
 
 function GameCoordinator(){
@@ -85,30 +38,38 @@ function GameCoordinator(){
     
     io.on('connection', function( socket ){  
 
-        console.log( "cliente [ " +  socket.id + " ] conectado. total: " + io.engine.clientsCount );       
+        console.log("cliente [ " +  socket.id + " ] conectado. total: " + io.engine.clientsCount);       
         // DEFINICAO -> ENVIAR LOGMESSAGE: Evento para menssagens de log do sistema no cliente.
     
         socket.on('FINDGAME', function( msg ){  
-        /* EVENTO: FINDGAME
+            /* EVENTO: FINDGAME
 
-           - verifica lista de servidores.
-           - manda o cliente abrir conexão com outro servidor. ENVIA o objeto Player. 
-               - coloca o cliente na lista de PLAY-ACK dizendo que cliente está tentando se conectar com o gameServer. 
-               - lança um código para ser executado depois de um tempo-timeout (10 segundos) para verificar se o cliente conseguiu se conectar.
-                   - checa a variavel, senao da erro pro cliente.   
-           - cliente deve retornar caso conexao seja vem sucedida. PLAY-ACK.
-               - o game-coordinator ao receber o ACK do PLAY, retira o cliente da lista de PLAY-ACK;
-        */
+            - verifica lista de servidores.
+            - manda o cliente abrir conexão com outro servidor. ENVIA o objeto Player. 
+                - coloca o cliente na lista de PLAY-ACK dizendo que cliente está tentando se conectar com o gameServer. 
+                - lança um código para ser executado depois de um tempo-timeout (10 segundos) para verificar se o cliente conseguiu se conectar.
+                    - checa a variavel, senao da erro pro cliente.   
+            - cliente deve retornar caso conexao seja vem sucedida. PLAY-ACK.
+                - o game-coordinator ao receber o ACK do PLAY, retira o cliente da lista de PLAY-ACK;
+            */
+            var gameServerData   = JSON.parse( msg );
+            var gameServerSocket = serverList.get( gameServerData.id ).socket;
+
+            var resObj = {}
+            
+            clientList.get(socket.id).data.currentGameServerIp = gameServerData.ip;
+
+
         });
 
         // IDENTIFICA O SOCKET COMO UM SERVIDOR OU CLIENTE
         // FUTURAMENTE PODE EFETUAR AUTENTICACAO
-        socket.on('LOGIN', function(msg){  
+        socket.on('LOGIN', function( msg ){  
            
             var msgObj = JSON.parse(msg);
             var resObj = {}
            
-            if( msgObj.type == "player" ){                   
+            if( msgObj.ack == "player" ){                   
                
                 clientList.add( socket.id, new Player( msgObj.data.name, this ) ); 
                 console.log( "cliente [" +  socket.id + "] identificado como PLAYER: [" +  msgObj.data.name + "]. total players: " +  clientList.length() );
@@ -121,7 +82,7 @@ function GameCoordinator(){
                 //sending server list         
                 socket.emit( "SERVER_LIST_UPDATE", JSON.stringify( serverList.getAllData() ) );         
 
-            } else if( msgObj.type == "server" ) {
+            } else if( msgObj.ack == "server" ) {
 
                 serverList.add( socket.id, new GameServer(msgObj.data.name, msgObj.data.ip, msgObj.data.location, this) );  
                 console.log( "cliente [" +  socket.id + "] identificado como SERVER: [" +  msgObj.data.location + "]. total servers: " +  serverList.length() );

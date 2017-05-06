@@ -92,7 +92,7 @@ function setScene(sceneName, vel){
 $(_SCENE_LOGIN).on("click", "#buttonPlay", function(){
 
     var loginObj =  {
-                        type: "player",
+                        ack: "player",
                         data: { 
                                 name: $("#nameLabel").val()
                               }
