@@ -4,7 +4,7 @@ var app      = require('express')();
 var http     = require('http').Server(app);  
 var io       = require('socket.io')(http);
  
-function GameServer(name, ip, location){
+function GameServer(name, ip, location, gameCoordinatorIp){
     
     this.data = {
                   name: name || "",
@@ -14,37 +14,40 @@ function GameServer(name, ip, location){
 
     this.maxClients = 300;
     this.matches = [];
-    //this.database = new Database();
-    //socket para o game coordinator.
-    
     //clients sockets
     //this.waitingList = new List();
     var connectedClientsHash = [];
 
     this.gameCoordinator = { 
                               data: { 
-                                      ip: "http://127.0.0.1:3000"
+                                      ip: gameCoordinatorIp
                                     },
                               socket: {}   
                            };
 
     this.gameCoordinator.socket = ioc( this.gameCoordinator.data.ip );
-
+    
     var loginObj = { ack: "server",
                      data: this.data }
 
-    this.gameCoordinator.socket.send("LOGIN", JSON.stringify( loginObj ) );                       
+    this.gameCoordinator.socket.on('connect', function( socket ){
+          
+          this.emit("LOGIN", JSON.stringify( loginObj ) ); 
+          
+    });
 
     io.on('connection', function( socket ){
         
-        socket.on('EVENT', function( msg ){
+        console.log("cliente [ " +  socket.id + " ] conectado. total connections: " + io.engine.clientsCount); 
+
+        socket.on('LOGIN', function( msg ){
 
         });   
 
     });  
 
-    http.listen(3001, function(){  
-        console.log('servidor rodando em localhost:3001');
+    http.listen(3023, function(){  
+        console.log('servidor rodando em localhost:3002');
     });
 
     //COLOCAR CLIENTE NA LISTA DE CLIENTS
@@ -100,5 +103,5 @@ function GameServer(name, ip, location){
 //    }  //ON READY
 } // SERVER 
 
-var gameServer = new GameServer();
+var gameServer = new GameServer("Server02", "222.168.121.45", "SouthAmerica", "http://127.0.0.1:3000");
 

@@ -38,7 +38,7 @@ function GameCoordinator(){
     
     io.on('connection', function( socket ){  
 
-        console.log("cliente [ " +  socket.id + " ] conectado. total: " + io.engine.clientsCount);       
+        console.log("cliente [ " +  socket.id + " ] conectado. total connections: " + io.engine.clientsCount);       
         // DEFINICAO -> ENVIAR LOGMESSAGE: Evento para menssagens de log do sistema no cliente.
     
         socket.on('FINDGAME', function( msg ){  
@@ -55,9 +55,22 @@ function GameCoordinator(){
             var gameServerData   = JSON.parse( msg );
             var gameServerSocket = serverList.get( gameServerData.id ).socket;
 
-            var resObj = {}
+            var resObj = {
+                            ack: "",
+                            data: {}
+                         }
             
-            clientList.get(socket.id).data.currentGameServerIp = gameServerData.ip;
+            // preenche atributo do cliente
+            var client = clientList.get(socket.id);           
+
+            client.data.currentGameServerIp = gameServerData.ip;
+
+            var clt = {
+                        ack: "",
+                        data: client.data
+                      }
+
+            gameServerSocket.emit("FINDGAME", JSON.stringify( clt ) );
 
 
         });
@@ -66,6 +79,7 @@ function GameCoordinator(){
         // FUTURAMENTE PODE EFETUAR AUTENTICACAO
         socket.on('LOGIN', function( msg ){  
            
+           console.log( msg); 
             var msgObj = JSON.parse(msg);
             var resObj = {}
            
