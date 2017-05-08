@@ -27,7 +27,14 @@ function ConnectionList(){
         return this.client[id];
     }
 
-    this.getAll= function(){        
+    this.find  = function(id){
+        if (this.client[id] == undefined)
+            return false
+        else 
+            return true;    
+    }
+
+    this.getAll = function(){        
         return Object.values(this.client);  
     } 
 

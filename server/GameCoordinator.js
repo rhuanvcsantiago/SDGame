@@ -31,10 +31,6 @@ function GameCoordinator(){
     
     var clientList = new ConnectionList();
     var serverList = new ConnectionList();
-
-    // serverList.add( "kjlolDggk3D124Asdasad", new GameServer("server01", "177.1.8.1:3001", "brazil", {} ));
-    // serverList.add( "o123SDggk3Drhfdg2asad", new GameServer("server02", "156.7.2.1:3001", "america", {} ));
-    // serverList.add( "njkjftyhsgk3D1244asad", new GameServer("server14", "176.8.2.1:3001", "china", {} ));
     
     io.on('connection', function( socket ){  
 

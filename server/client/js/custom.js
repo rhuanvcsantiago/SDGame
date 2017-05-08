@@ -10,6 +10,8 @@ var _PLAYER;
 var _SCENE_PLAY = "#login";
 var _SCENE_SERVER_LIST = "#start";
 var _SCENE_MATCH = "#match";
+var _SCENE_MATCH_RUNNING = "#matchrunning";
+
 
 function showInfo(type, msg){
     
@@ -101,9 +103,7 @@ function setPlayer_GameCoodinator_SocketsEvents(){
 function updateServerList(serverList){
 
     $("#serverList").empty();
-    console.log( "lista de servers:" );
-    console.log( serverList );
-
+  
     for(var i=0; i< serverList.length; i++){
         $("#serverList").append('<div id="'+serverList[i].name+'" class="serverBox"> <ul><li>'+serverList[i].name+'</li><li>'+serverList[i].location+'</li><li class="serverIp">'+serverList[i].ip+'</li></ul> <button type="button" class="BOTAO_ENTRAR btn btn-danger btn-sm" value="' + serverList[i].name + '"> ENTRAR </button></div>');        
     }
@@ -118,6 +118,7 @@ function setScene(sceneName, vel){
     $( _SCENE_PLAY ).hide();
     $( _SCENE_SERVER_LIST ).hide();
     $( _SCENE_MATCH ).hide();
+    $( _SCENE_MATCH_RUNNING ).hide();
 
     $( sceneName ).show( velocity );
 
@@ -125,27 +126,16 @@ function setScene(sceneName, vel){
 
 $(_SCENE_SERVER_LIST).on("click", ".BOTAO_ENTRAR", function(){
 
-    
     var gameServerIp = $(this).parent().children().children("li.serverIp").text();
     //var gameServerIp = serverBox
 
     console.log(gameServerIp);
-    //_PLAYER.socket.gameServer = io( gameServerIp );
-    //setPlayer_GameServer_SocketsEvents();
-                  
-    /*
-    var loginObj =  {
-                        ack: "player",
-                        data: { 
-                                name: $("#nameLabel").val()
-                              }
-                    };
+    $(this).attr("disabled","disabled");
+    _PLAYER.socket.gameServer = io( gameServerIp );
+    setPlayer_GameServer_SocketsEvents();
+
     
-    if ( loginObj.data != "" ) 
-        _PLAYER.socket.gameCoordinator.emit("LOGIN", JSON.stringify(loginObj) );
-    else {
-        showMessage("Preencha algum nick", "danger");
-    }    */
+                  
 });
 
 function setPlayer_GameServer_SocketsEvents(){
@@ -155,18 +145,59 @@ function setPlayer_GameServer_SocketsEvents(){
         setScene( _SCENE_MATCH );
         //envia dados do game coodinator
         showInfo("info", "Connectado com servidor e esperando jogadores...");
+        
+        var playerObj =  {
+                            data:{
+                                name: _PLAYER.name,
+                                gc_id: _PLAYER.socket.gameCoordinator.id
+                            },
+                            socket: {}  
+                         }
+
+        this.emit( "REGISTER", JSON.stringify(playerObj) );
 
     });
 
+    // implementar no server
+    _PLAYER.socket.gameServer.on('QUEUE_LIST', function(msg){
+
+        var msgObj = JSON.parse(msg);
+        //msgObj.arrayPlayersId;
+        $(_SCENE_MATCH).empty();
+        $(_SCENE_MATCH).append( msg );
+        
+    });
+
+    _PLAYER.socket.gameServer.on('REMOVED_FROM_QUEUE', function(msg){
+
+        showInfo("danger","Você foi removida da lista de espera por <strong>INATIVIDADE</strong>");
+        setScene( _SCENE_SERVER_LIST );  
+        _PLAYER.socket.gameServer.close();
+
+    });
+    
+    // implementar no server
+    _PLAYER.socket.gameServer.on('START_MATCH', function(msg){
+
+        var msgObj = JSON.parse(msg);
+        //msgObj.matchId;
+        setScene( _SCENE_MATCH_RUNNING );
+        console.log(msgObj);
+        showInfo("success", "Partida <strong> [ " + msgObj.matchId + " ] </strong> iniciada");
+
+    }); 
+
     _PLAYER.socket.gameServer.on('connect_error', function(msg){
-      
+         setScene( _SCENE_SERVER_LIST );
+         showInfo("danger", "Erro de conexão com servidor, voltando a tela de escolha de servidores.");
+         _PLAYER.socket.gameServer.close();
     });  
 
 
     _PLAYER.socket.gameServer.on('disconnect', function(msg){
          setScene( _SCENE_SERVER_LIST );
-         showInfo("danger", "Servidor <strong>desconectado<;strong>, voltando a tela de escolha de servidores.");
-
+         showInfo("danger", "Servidor <strong>desconectado</strong>, voltando a tela de escolha de servidores.");
+         _PLAYER.socket.gameServer.close();
          // fazer tratamento de erro de desconecao
 
     });
@@ -185,7 +216,7 @@ $(_SCENE_PLAY).on("click", "#buttonPlay", function(){
                                 name: $("#nameLabel").val()
                               }
                     };
-    
+    _PLAYER.name = $("#nameLabel").val();
     if ( loginObj.data != "" ) 
         _PLAYER.socket.gameCoordinator.emit("LOGIN", JSON.stringify(loginObj) );
     else {

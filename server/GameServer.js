@@ -9,14 +9,21 @@ function GameServer(name, ip, location, gameCoordinatorIp){
     this.data = {
                   name: name || "",
                   ip: ip || "",
-                  location: location || ""
+                  location: location || "",
+                  maxClients: 300,
+                  connectedClients: 0,
+                  
                 }
 
-    this.maxClients = 300;
-    this.matches = [];
-    //clients sockets
-    //this.waitingList = new List();
-    var connectedClientsHash = [];
+
+    
+    //Lista para iniciar partida. Minumo 4 players;
+    var waitingList = new ConnectionList();
+    var clientList  = new ConnectionList();
+    var matches = [];
+
+
+    var matchCount = 0;
 
     this.gameCoordinator = { 
                               data: { 
@@ -38,70 +45,97 @@ function GameServer(name, ip, location, gameCoordinatorIp){
 
     io.on('connection', function( socket ){
         
-        console.log("cliente [ " +  socket.id + " ] conectado. total connections: " + io.engine.clientsCount); 
+        //console.log("cliente [ " +  socket.id + " ] conectado. total connections: " + io.engine.clientsCount); 
 
-        socket.on('LOGIN', function( msg ){
+        socket.on('disconnect', function( msg ){
+            
+            var playerGsId = socket.id;
+            var waitingArray = clientList.getAll();
 
+            for( var i=0; i<waitingArray.length; i++ ){
+
+                var waitingPlayer = waitingArray[i];
+                
+                if ( waitingPlayer.data.gs_id == playerGsId ){
+                    clientList.remove( waitingPlayer.data.gc_id );
+                    
+                    if( waitingList.find(waitingPlayer.data.gc_id) )
+                      waitingList.broadcast( "QUEUE_LIST", JSON.stringify( waitingList.getAllData() ) );
+
+                    waitingList.remove( waitingPlayer.data.gc_id );
+                    console.log("client: [ " + waitingPlayer.data.gc_id + " ] desconectado. " + clientList.length()  ); 
+                    break;  
+                }                                        
+            }
+        });
+
+        socket.on('REGISTER', function( msg ){
+
+            var playerObj = JSON.parse( msg );
+            playerObj.data.gs_id = socket.id;
+            playerObj.socket = socket;
+
+            clientList.add( playerObj.data.gc_id, playerObj );
+
+            console.log("client: [ " + playerObj.data.gc_id + " ] conectado. total clientes: " + clientList.length() ); 
+            
+            if( waitingList.length() < 3 ){
+
+              waitingList.add( playerObj.data.gc_id, playerObj );
+              console.log("QUEUE_LIST_LENGTH: " + waitingList.length() );
+              waitingList.broadcast( "QUEUE_LIST", JSON.stringify( waitingList.getAllData() ) );
+
+            } else {
+                if( waitingList.length() == 3){
+                    
+                    // VERIFY IF EVERYONE IS ALIVE
+                    console.log("preparing to start match, checking players...");
+                    var readyToPlay = 0;
+                    var waitingArray = waitingList.getAll();
+
+                    for( var i=0; i< waitingArray.length; i++ ){
+
+                        var waitingPlayer = waitingArray[i];
+                        
+                        if ( clientList.find( waitingPlayer.data.gc_id ) )
+                            readyToPlay++;
+                        else {
+                            //remove cliente da lista
+                            waitingPlayer.socket.emit("REMOVED_FROM_QUEUE");
+                            waitingList.remove( waitingPlayer.data.gc_id ); 
+                            break;                           
+                        }
+
+                    }
+                    if( readyToPlay == 3 ) {
+                        //pega no banco de dados o ultimo id
+                        //var lastMatchId = database.getLastMatchId() +1;
+                        //matches.add( new Match( matchCount+1, waitingList ) );
+                        matchCount++;
+                        waitingList.add( playerObj.data.gc_id, playerObj );
+                        console.log("Começando partida N: " + matchCount );
+                        //waitingList.broadcast( "START_MATCH", JSON.stringify( match.table ) );
+                        waitingList.broadcast( "START_MATCH", JSON.stringify( {matchId: matchCount} ) );
+                        waitingList.clear();
+                        console.log("QUEUE_LIST_LENGTH: " + waitingList.length() );
+                    }       
+                }
+            }
         });   
 
     });  
 
-    http.listen(3023, function(){  
-        console.log('servidor rodando em localhost:3002');
+    http.listen(3001, function(){  
+        console.log('servidor rodando em localhost:3001');
     });
 
-    //COLOCAR CLIENTE NA LISTA DE CLIENTS
-   // this.onConnection = function(){
-        //AVISAR CONEXAO DO CLIENTE AO GAME COORDINATOR.
-    //}
     
-    /*
-        
-        Verifica a quantidade de clientes na lista de espera.
-            Se for menor que 3
-                Sdiciona cliente que esta se conectando na lista de espera
-            Se for igual a 3, significa que o ultimo cliente esta se conectando.
-                Verifica se os anteirores estao vivos.
-                    Se tiver.
-                        Cria partida com os jogadores.
-                        Limpa a lista.
-                    Senão.
-                        Limpa cliente morto.
-                        Adiciona cliente novo na lista de espera.    
+}   
 
-    */
-   // this.onReady = function(client) {
+var ip = "127.0.0.1";
+var port = "3001";
 
-   //     if( this.waitingList.length < 3 ){
-   //         this.waitingList.add(client);
-   //     } else {
-     //       if( this.waitingList.length == 3){
-                
-                //VERIFY IF EVERYONE IS ALIVE
-       //         var readyToPlay = 0;
-         //       for(var i=0; i< this.waitingList.length(); i++){
-           //         var waitingPlayer = this.waitingList.get(i);
-                    
-    //                if ( waitingPlayer.isAlive() )
-      //                  readyToPlay++;
-        //            else {
-          //              //remove cliente da lista
-            //            this.waitingList.remove(i);
-              //          this.waitingList.add(client);
-                //        break;
- //                   }
-   //             }
-//
-  //              if( readyToPlay == 3 ) {
-    //                //pega no banco de dados o ultimo id
-      //              var lastMatchId = database.getLastMatchId() +1;
-        //            this.matches.add( new Match(lastMatchId, this.waitingList) );
-          //          this.waitingList.clear();
-            //    }       
-//            }
-  //      }
-//    }  //ON READY
-} // SERVER 
+var adress = ip + ":" + port;
 
-var gameServer = new GameServer("Server02", "222.168.121.45", "SouthAmerica", "http://127.0.0.1:3000");
+var gameServer = new GameServer("server01", adress, "America", "http://127.0.0.1:3000");
 
