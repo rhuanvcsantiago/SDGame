@@ -176,17 +176,6 @@ function setPlayer_GameServer_SocketsEvents(){
 
     });
     
-    // implementar no server
-    _PLAYER.socket.gameServer.on('START_MATCH', function(msg){
-
-        var msgObj = JSON.parse(msg);
-        //msgObj.matchId;
-        setScene( _SCENE_MATCH_RUNNING );
-        console.log(msgObj);
-        showInfo("success", "Partida <strong> [ " + msgObj.matchId + " ] </strong> iniciada");
-
-    }); 
-
     _PLAYER.socket.gameServer.on('connect_error', function(msg){
          setScene( _SCENE_SERVER_LIST );
          showInfo("danger", "Erro de conexão com servidor, voltando a tela de escolha de servidores.");
@@ -202,8 +191,23 @@ function setPlayer_GameServer_SocketsEvents(){
 
     });
 
+    // implementar no server
+    _PLAYER.socket.gameServer.on('START_MATCH', function(msg){
 
-    _PLAYER.socket.gameServer.on('reconnect_attempt', function(msg){
+        var msgObj = JSON.parse(msg);
+        //msgObj.matchId;
+        setScene( _SCENE_MATCH_RUNNING );
+        console.log(msgObj);
+        showInfo("success", "Partida <strong> [ " + msgObj.matchId + " ] </strong> iniciada");
+
+    });
+
+    _PLAYER.socket.gameServer.on('UPDATE_MATCH', function(msg){
+        console.log(msg);  
+    });
+
+    _PLAYER.socket.gameServer.on('END_MATCH', function(msg){
+        console.log("end");
     });
 
 }

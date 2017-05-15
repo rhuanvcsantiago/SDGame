@@ -3,7 +3,24 @@ var ioc      = require('socket.io-client');
 var app      = require('express')();  
 var http     = require('http').Server(app);  
 var io       = require('socket.io')(http);
- 
+
+function Match(matchId, playersList){
+
+    this.id = matchId;
+    this.players = playersList;
+    this.turn = 0;
+    this.maxTurns = 10;
+    this.clientTurnTimeOut = 30; // segundos
+    this.clientActions = [];
+    this.pieces = [];
+    this.invalidCells = [];
+    this.stats = "executing";
+
+    this.execute = function(){
+        console.log ("turno executado [ " + this.turn + " ]  com sucesso.");
+    }
+}
+
 function GameServer(name, ip, location, gameCoordinatorIp){
     
     this.data = {
@@ -14,16 +31,15 @@ function GameServer(name, ip, location, gameCoordinatorIp){
                   connectedClients: 0,
                   
                 }
-
-
     
     //Lista para iniciar partida. Minumo 4 players;
     var waitingList = new ConnectionList();
     var clientList  = new ConnectionList();
-    var matches = [];
+    var matches     = new ConnectionList();
 
 
     var matchCount = 0;
+    var turnTimeOut = 30000; //milliseconds
 
     this.gameCoordinator = { 
                               data: { 
@@ -110,12 +126,8 @@ function GameServer(name, ip, location, gameCoordinatorIp){
                     if( readyToPlay == 3 ) {
                         //pega no banco de dados o ultimo id
                         //var lastMatchId = database.getLastMatchId() +1;
-                        //matches.add( new Match( matchCount+1, waitingList ) );
-                        matchCount++;
                         waitingList.add( playerObj.data.gc_id, playerObj );
-                        console.log("Começando partida N: " + matchCount );
-                        //waitingList.broadcast( "START_MATCH", JSON.stringify( match.table ) );
-                        waitingList.broadcast( "START_MATCH", JSON.stringify( {matchId: matchCount} ) );
+                        startMatch(  );
                         waitingList.clear();
                         console.log("QUEUE_LIST_LENGTH: " + waitingList.length() );
                     }       
@@ -124,6 +136,43 @@ function GameServer(name, ip, location, gameCoordinatorIp){
         });   
 
     });  
+
+    function updateMatch( matchId ){
+        var match   = matches.get( matchId );  
+        
+        match.execute();
+        match.players.broadcast( "UPDATE_MATCH", match.turn /* MATCH DATA */);
+        match.turn++;  
+
+        if( match.turn < 11 && match.stats != "finished" )
+            setTimeout( updateMatch.bind(this, matchId ), 5000 );
+        else
+            endMatch( match );
+               
+    }
+
+    function endMatch( match ){
+
+        match.players.broadcast( "END_MATCH", match.turn /* MATCH DATA */); 
+        console.log("match [ " + match.id + " ] ended.");
+        matches.remove( match.id );
+        
+
+    }
+
+    function startMatch(){
+
+        matchCount++;
+        // corrigir referencia perdida.
+        // var copiedObject = jQuery.extend(true, {}, originalObject);
+        matches.add( matchCount, new Match( matchCount, waitingList.clone() ) );
+
+        updateMatch( matchCount );
+
+        console.log("Começando partida N: " + matchCount );
+        waitingList.broadcast( "START_MATCH", JSON.stringify( {matchId: matchCount} ) /* MATCH DATA */ );
+
+    }
 
     http.listen(3001, function(){  
         console.log('servidor rodando em localhost:3001');
@@ -137,5 +186,5 @@ var port = "3001";
 
 var adress = ip + ":" + port;
 
-var gameServer = new GameServer("server01", adress, "America", "http://127.0.0.1:3000");
+var gameServer = new GameServer("server01Rhuan", adress, "America", "http://127.0.0.1:3000");
 

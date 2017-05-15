@@ -1,12 +1,11 @@
-body {
-    background-image: url("../img/logo.jpg");
+body{
+        background-color: #F5F5F5;
 }
 
 #login {
-    background-color: white;
     min-height: 200px;
     max-width: 400px;
-    box-shadow: 0 0 9px 4px rgba(0,0,0,0.5);
+    /*box-shadow: 0 0 9px 4px rgba(0,0,0,0.5);*/
 }
 
 #start {
@@ -14,9 +13,24 @@ body {
         box-shadow: 0 0 9px 4px rgba(0,0,0,0.5)
 }
 
+#matchrunning {
+        /*box-shadow: 0 0 9px 4px rgba(0,0,0,0.5)*/
+}
+
+
+.waitingPlayer{
+    background-color:#D3D3D3;
+    border: solid 0.5px white;
+}
+
 #match {
         min-height: 400px;
-        box-shadow: 0 0 9px 4px rgba(0,0,0,0.5)
+        /*box-shadow: 0 0 9px 4px rgba(0,0,0,0.5)*/
+}
+
+#wrapper {
+        min-height: 480px;
+        width: 580px;
 }
 
 .serverBox{
@@ -25,4 +39,15 @@ body {
     background-color: black;
     color: white;
     box-shadow: 0 0 9px 4px white;
+}
+
+.tableCell{
+    min-width: 50px;
+    min-height: 50px;
+    border: solid 1px black;
+    font-size:30px;
+}
+
+.move_button{
+    margin-bottom: 5px;
 }

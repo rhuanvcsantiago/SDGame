@@ -58,6 +58,16 @@ function ConnectionList(){
         return array;
     }   
 
+    this.clone = function(){
+        var list = new ConnectionList();
+
+        for (var key in this.client) {
+            list.add( key, this.client[key] );         
+        }
+
+        return list;
+    }
+
 }
 
 module.exports = ConnectionList;

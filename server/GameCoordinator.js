@@ -75,7 +75,7 @@ function GameCoordinator(){
         // FUTURAMENTE PODE EFETUAR AUTENTICACAO
         socket.on('LOGIN', function( msg ){  
            
-           console.log( msg); 
+           //console.log( msg); 
             var msgObj = JSON.parse(msg);
             var resObj = {}
            

@@ -1,6 +1,6 @@
-function Match(playersList){
+function Match(matchId, playersList){
 
-    this.id;
+    this.id = matchId;
     this.players = playersList;
     this.turn = 0;
     this.maxTurns = 10;
@@ -9,11 +9,11 @@ function Match(playersList){
     this.pieces = [];
     this.invalidCells = [];
 
-    var colors['blue', 'red', 'green', 'yellow'];
+    var colors = ['blue', 'red', 'green', 'yellow'];
 
     var invalidCell = {
-        x: '';
-        y: '';
+        x: '',
+        y: ''
     }
 
     var piece = {
@@ -56,7 +56,7 @@ function Match(playersList){
             }
             else{
                 this.clientTurnTimeOut --;
-                io.sockets.emit(this.id, turno: this.turn, remainingTime: this.clientTurnTimeOut);
+                //io.sockets.emit(this.id, turno: this.turn, remainingTime: this.clientTurnTimeOut);
             }
         }
         else{
@@ -71,7 +71,7 @@ function Match(playersList){
         // AO RECEBER MENSSAGEM DO CLIENTE 
             // GUARDAR ACOES ENVIADAS NO ARRAY.
     socket.on('MOVE', function(data){
-        this.clientsActions.push({playerId : data.playerId, playerName : data.name, playerPlay : data:move})
+        //this.clientsActions.push({playerId : data.playerId, playerName : data.name, playerPlay : data:move})
     })
 
     this.createRawTable = function(){
@@ -223,7 +223,7 @@ function Match(playersList){
             default:
                 console.log('ERRO ao receber comando do jogador');
         }
-    })        
+    }        
     }
 
 
@@ -246,10 +246,6 @@ function Match(playersList){
         }
         return false;
     }
-
-}
-
-
 
 //gera número aleatório entre os intervalos min e max
 //o min é incluso entres os números, mas não o máximo
