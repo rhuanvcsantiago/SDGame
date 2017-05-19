@@ -65,8 +65,11 @@
                 
             </div>
 
-            <div id="match" class="container" style="background-color: red">
-                <h1> match </h1>
+            <div id="match" class="container">
+                <pre>Lista de espera: </pre>
+                <ul id="queue_list">
+                
+                </ul>    
             </div>
 
             <div id="matchrunning" class="container" style="background-color: white">
@@ -76,11 +79,11 @@
                             turno: <strong id="turnoNumber"> 9 </strong>waiting for players...
                         </div>
                        
-                       <div class="row">
-                           <div class="col-3 waitingPlayer">rhuan</div>
-                           <div class="col-3 waitingPlayer">pedro</div>
-                           <div class="col-3 waitingPlayer">hélica</div>
-                           <div class="col-3 waitingPlayer">madona</div>
+                       <div id="playerListReady" class="row">
+                           <div class="col-3 waitingPlayer">player1</div>
+                           <div class="col-3 waitingPlayer">player2</div>
+                           <div class="col-3 waitingPlayer">player3</div>
+                           <div class="col-3 waitingPlayer">player4</div>
                        </div> 
                     </div>
                 </div>    
@@ -169,38 +172,40 @@
                         </div>
                     </div>             
                 </div>
-                <br />
+                <div class="row">
+                    <div class="col-12">
+                        <div id="playerCommands" style='text-align: center; color:red' > </div>
+                    </div>    
+                </div>
                 <div class="row" id="controls">
                     <div class="col-5">
                         <div style='text-align: center'> 
                             <h3>Rotacionar</h3>   
-                            <button type="button" class="btn btn-info  move_button_lr" onclick='TurnLeft()'>&#9668</button><!--left-->
-                            <button type="button" class="btn btn-info  move_button" onclick='TurnUp()' >&#9650</button><!--up-->
-                            <button type="button" class="btn btn-info  move_button_lr" onclick='TurnRight()'>&#9658</span></button><!--right-->
-                            <button type="button" class="btn btn-info  move_button" onclick='TurnDown()'>&#9660</button><!--down-->
-                        </div>   
+                            <button type="button" class="btn btn-info  move_button" onclick='addCommand("rotate", "right")'>⤿</button><!--left-->
+                            <button type="button" class="btn btn-info  move_button" onclick='addCommand("rotate", "left")'>⤾</button><!--right-->
+                        </div>
                     </div>  
                     <div class="col-2">
                         <div style='text-align: center'> 
                             <span style="font-size:60px">30</span>
-                            <button type="button" class="btn btn-danger" onclick='playerReady()'>GO!</button>
+                            <button type="button" class="btn btn-danger" onclick='commitCommands()'>GO!</button>
                         </div>
                     </div>   
                     <div class="col-5"> 
                         <div style='text-align: center'>
                             <h3>Movimentar</h3> 
-                            <button type="button" class="btn btn-warning  move_button_lr" onclick='GoLeft()'>&#9664</button><!--left-->
-                            <button type="button" class="btn btn-warning  move_button" onclick='GoUp()'>&#9650</button><!--up-->
-                            <button type="button" class="btn btn-warning  move_button_lr" onclick='GoRight()'>&#9658</button><!--right--> 
-                            <button type="button" class="btn btn-warning  move_button" onclick='GoDown()'>&#9660</button><!--down-->
+                            <button type="button" class="btn btn-warning  move_button" onclick='addCommand("move", "left")'>◀</button><!--left-->
+                            <button type="button" class="btn btn-warning  move_button" onclick='addCommand("move", "up")'>▲</button><!--up-->
+                            <button type="button" class="btn btn-warning  move_button" onclick='addCommand("move", "right")'>►</button><!--right--> 
+                            <button type="button" class="btn btn-warning  move_button" onclick='addCommand("move", "down")'>▼</button><!--down-->
                         </div>
                     </div>
                 </div>
                 <br />
                 <div class="row" id="helper">
                    <div class="col-12">
-                        <div class="col-1 movPlayed">
-                            <button type="button" class="btn btn-sm btn-basic " onclick='playerReady()'>limpar comandos</button>
+                       <div style='text-align: center'> 
+                            <button id="commitCommandsButton" type="button" class="btn btn-basic" onclick='cleanCommands()'>limpar comandos</button>
                         </div>
                     </div>
                 </div>    

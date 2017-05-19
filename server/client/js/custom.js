@@ -104,7 +104,7 @@ function updateServerList(serverList){
 
     $("#serverList").empty();
   
-    for(var i=0; i< serverList.length; i++){
+    for(var i=0; i<serverList.length; i++){
         $("#serverList").append('<div id="'+serverList[i].name+'" class="serverBox"> <ul><li>'+serverList[i].name+'</li><li>'+serverList[i].location+'</li><li class="serverIp">'+serverList[i].ip+'</li></ul> <button type="button" class="BOTAO_ENTRAR btn btn-danger btn-sm" value="' + serverList[i].name + '"> ENTRAR </button></div>');        
     }
   
@@ -133,9 +133,7 @@ $(_SCENE_SERVER_LIST).on("click", ".BOTAO_ENTRAR", function(){
     $(this).attr("disabled","disabled");
     _PLAYER.socket.gameServer = io( gameServerIp );
     setPlayer_GameServer_SocketsEvents();
-
-    
-                  
+                
 });
 
 function setPlayer_GameServer_SocketsEvents(){
@@ -149,7 +147,9 @@ function setPlayer_GameServer_SocketsEvents(){
         var playerObj =  {
                             data:{
                                 name: _PLAYER.name,
-                                gc_id: _PLAYER.socket.gameCoordinator.id
+                                gc_id: _PLAYER.socket.gameCoordinator.id,
+                                gs_id: this.id,
+                                currentMatch: null
                             },
                             socket: {}  
                          }
@@ -162,9 +162,17 @@ function setPlayer_GameServer_SocketsEvents(){
     _PLAYER.socket.gameServer.on('QUEUE_LIST', function(msg){
 
         var msgObj = JSON.parse(msg);
+        console.log( msgObj );
         //msgObj.arrayPlayersId;
-        $(_SCENE_MATCH).empty();
-        $(_SCENE_MATCH).append( msg );
+        $("#queue_list").empty();
+
+        for (var key in msgObj) {
+            if (msgObj.hasOwnProperty(key)) {
+                var element = msgObj[key];
+                $("#queue_list").append( "<li>" + element.name + "</li>" );
+            }
+        }
+        
         
     });
 
@@ -188,26 +196,45 @@ function setPlayer_GameServer_SocketsEvents(){
          showInfo("danger", "Servidor <strong>desconectado</strong>, voltando a tela de escolha de servidores.");
          _PLAYER.socket.gameServer.close();
          // fazer tratamento de erro de desconecao
-
     });
 
     // implementar no server
     _PLAYER.socket.gameServer.on('START_MATCH', function(msg){
 
-        var msgObj = JSON.parse(msg);
+        var matchData = JSON.parse(msg);
         //msgObj.matchId;
         setScene( _SCENE_MATCH_RUNNING );
-        console.log(msgObj);
-        showInfo("success", "Partida <strong> [ " + msgObj.matchId + " ] </strong> iniciada");
+        showInfo("success", "Partida <strong> [ " + matchData.id + " ] </strong> iniciada");
+        createPlayerReadyMenu( matchData.playersList );
 
     });
 
     _PLAYER.socket.gameServer.on('UPDATE_MATCH', function(msg){
-        console.log(msg);  
+
+        
+        //var matchData = JSON.parse(msg);
+
+        $(".move_button").removeAttr("disabled"); 
+        $("#commitCommandsButton").removeAttr("disabled"); 
+        $("#playerListReady").children().css("background-color", "#D3D3D3"); 
+
+        //console.log("TURNO [" + matchData.turn + "] Iniciado. 30 segundos para jogar");
+        console.log(msg);   
+
+        refreshCountDown();
+
+    });
+
+    _PLAYER.socket.gameServer.on('PLAYER_READY', function(playerId){
+
+        var id = "#waitingPlayer" + playerId;
+        $(id).css("background-color", "green");
+
     });
 
     _PLAYER.socket.gameServer.on('END_MATCH', function(msg){
         console.log("end");
+        setTimeout( function(){ setScene( _SCENE_SERVER_LIST ); }, 10000 );
     });
 
 }
@@ -247,6 +274,71 @@ function showMessage(msg, type){
     }   
             
         
+}
+
+var _playerCommands = [];
+
+function addCommand(type, value){
+    
+    var command = {
+                    type: type,
+                    value: value
+                  }
+
+    if( _playerCommands.length < 3 ){
+        _playerCommands.push( command );
+
+        if( _playerCommands.length == 3 ){
+            $(".move_button").attr("disabled","disabled");
+        }
+
+    } 
+
+    showCommands();   
+
+}
+
+function cleanCommands(){
+    $(".move_button").removeAttr("disabled");  
+    _playerCommands = []; 
+    showCommands();
+}
+
+function showCommands(){
+
+    var string = "";
+
+    for (var index = 0; index < _playerCommands.length; index++) {
+        var element = _playerCommands[index];
+        string += " ("+ (index+1) + ") " + element.type + "->" + element.value + " ";
+    }
+
+    $("#playerCommands").text( string );
+
+}
+
+function commitCommands(){
+
+    _PLAYER.socket.gameServer.emit("TURN_COMMANDS", JSON.stringify( _playerCommands ) );
+    cleanCommands();
+
+    $(".move_button").attr("disabled","disabled");
+    $("#commitCommandsButton").attr("disabled","disabled");
+
+}
+
+function refreshCountDown(){
+
+}
+
+function createPlayerReadyMenu(playerList){
+    
+    $("#playerListReady").empty();
+
+    for(var i=0; i<playerList.length; i++){
+        $("#playerListReady").append('<div id="waitingPlayer' + playerList[i].gc_id + '" class="col-3 waitingPlayer">' + playerList[i].name + '</div>');
+    }
+
 }
 
 initialize();

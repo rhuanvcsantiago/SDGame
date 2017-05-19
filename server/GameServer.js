@@ -6,21 +6,201 @@ var io       = require('socket.io')(http);
 
 function Match(matchId, playersList){
 
-    this.id = matchId;
+    this.data = {
+        id: matchId,
+        table: [],
+        turn: 0,
+        maxTurns: 10,
+        playersList: [],
+        playerTurnTimeOut: 30000, //milisec
+        stats: undefined //{type: executing/finished, value:}              
+    }
+
+    this.playerTurnActions = new ConnectionList(); // [playerID] = array("right", "r_left", "botton");
+    this.nextTurn;
     this.players = playersList;
-    this.turn = 0;
-    this.maxTurns = 10;
-    this.clientTurnTimeOut = 30; // segundos
-    this.clientActions = [];
-    this.pieces = [];
-    this.invalidCells = [];
-    this.stats = "executing";
+    this.rocksAmmount = 8;
 
     this.execute = function(){
-        console.log ("turno executado [ " + this.turn + " ]  com sucesso.");
+        //applyTurnActions();
+        //checkLastPlayerStand();
+        console.log ("Executando turno [ " + this.data.turn + " ]  ...");
     }
-}
 
+    function checkLastPlayerStand(){
+        
+        var hasMoreThanOnePlayer = false;
+        var firstPlayer = undefined;
+        for( var i = 0; i < 8; i++ ){
+            for( var j = 0; j < 8; j++ ){            
+                
+                if( table[i][j].length > 0 ){
+                    var piece = getPiece(i,j);
+                
+                    if(firstPlayer){
+                        firstPlayer = piece.playerId;
+                    }
+
+                    if( piece.playerId != firstPlayer)
+                        hasMoreThanOnePlayer = true;
+                }
+            }
+        }
+
+    }
+
+    this.initialize = function(){
+        //createTable();
+        //randomizePlayersPositions();
+        //randomizeBlocksPositions();
+        this.data.playersList = this.players.getAllData();
+        this.data.stats = 'executing';
+    }
+
+    this.addPlayerTurnCommand = function( playerId, turnCommand){
+        this.playerTurnActions.add(playerId, turnCommand);    
+    }
+
+    function createTable(){}
+    function randomizePlayersPositions(){}
+    function randomizeBlocksPositions(){}
+    
+    function solveConflicts(){
+        for( var i = 0; i < 8; i++ ){
+            for( var j = 0; j < 8; j++ ){            
+                if( table[i][j].length > 1 )
+                    solveConflict(i,j);
+            }
+        }
+    }
+
+    function solveConflict(i, j){
+        //var piecesArray = table[i][j];
+    }
+
+    function applyTurnActions(){  
+        // execute 3 actions per turn
+        for( var k = 0; k < 3; k++ ) {
+             
+            for ( var playerId in this.playerTurnActions ) {              
+                
+                var playerActions = this.playerTurnActions[playerId];
+
+                if( playerActions != undefined ){
+
+                    var action = this.playerTurnActions[playerId][k]; 
+                    if( action != undefined )
+                     tryMovePlayerPieces( playerId, i, j, action );
+
+                }
+            }
+            solveConflicts();
+        } 
+        cleanTurnActions();
+    } 
+
+    function cleanTurnActions(){
+        this.playerTurnActions.clean();
+    }
+
+    function tryMovePlayerPieces(playerId, i, j, action){
+        for( var i = 0; i < 8; i++ ){
+            for( var j = 0; j < 8; j++ ){
+                
+                var piece = getPiece(i, j);
+                if( piece.playerId == playerId )
+                    tryMovePiece(i, j, action);
+
+            }
+        }
+    }
+
+    function isOutOfTable(i,j){
+        if(i < 0 || i > 7 || j < 0 || j > 7)
+            return true;
+        return false;    
+    }
+
+    function getPiece(i,j){
+        return table[i][j][0]
+    }
+
+    function tryMovePiece(i, j, action){
+
+        var piece = getPiece(i, j);
+
+        // se é uma rotação, apenas muda a variável da peça
+        if( action.type == "rotate"){
+            if( action.value == "right" ){
+                if( piece.lookingAt == "right" )
+                    piece.lookingAt = "down";
+
+                if( piece.lookingAt == "down" )
+                    piece.lookingAt = "left";
+
+                if( piece.lookingAt == "left" )
+                    piece.lookingAt = "up";
+
+                if( piece.lookingAt == "up" )
+                    piece.lookingAt = "right";            
+            } else {
+                if( piece.lookingAt == "right" )
+                    piece.lookingAt = "up";
+
+                if( piece.lookingAt == "up" )
+                    piece.lookingAt = "left";
+
+                if( piece.lookingAt == "left" )
+                    piece.lookingAt = "down";
+
+                if( piece.lookingAt == "down" )
+                    piece.lookingAt = "right";  
+            }
+        } else { // se é um movimento, calcula qual a posicão.
+
+            var next_i;
+            var next_j;
+
+            if( action.value == "left"){
+                next_i = i-1;
+                next_j = j;    
+            }
+            if( action.value == "right"){
+                next_i = i+1;
+                next_j = j;
+            }
+            if( action.value == "down"){
+                next_i = i;
+                next_j = j+1;
+            }
+            if( action.value == "up"){
+                next_i = i;
+                next_j = j-1;
+            }
+
+            // se a posição de movimento desejada não é fora do tabuleiro
+            if( !isOutOfTable(next_i, next_j) ){
+
+                piece.lastPosition_x = i;
+                piece.lastPosition_y = j;
+
+                var next_piece = getPiece(next_i, next_j);
+
+                // se a posição desejada não é uma pedra
+                if( next_piece.type != "rock" ) {
+                    table[next_i][next_j].push( piece );
+                }
+                
+            }
+
+        }
+    }
+
+    this.initialize();
+
+}
+// piece{playerId, type}
+// action{type, value}
 function GameServer(name, ip, location, gameCoordinatorIp){
     
     this.data = {
@@ -59,6 +239,19 @@ function GameServer(name, ip, location, gameCoordinatorIp){
           
     });
 
+    function getGameCoordinatorId(gameSerderId){
+        var clientArray = clientList.getAllData();
+        
+        for (var i = 0; i < clientArray.length; i++) {
+            var element = clientArray[i];
+            if( element.gs_id == gameSerderId )
+                return element.gc_id;
+        } 
+
+        return false;
+
+    }
+
     io.on('connection', function( socket ){
         
         //console.log("cliente [ " +  socket.id + " ] conectado. total connections: " + io.engine.clientsCount); 
@@ -66,25 +259,64 @@ function GameServer(name, ip, location, gameCoordinatorIp){
         socket.on('disconnect', function( msg ){
             
             var playerGsId = socket.id;
-            var waitingArray = clientList.getAll();
+            var playerGcId = getGameCoordinatorId( playerGsId );
+            
 
-            for( var i=0; i<waitingArray.length; i++ ){
-
-                var waitingPlayer = waitingArray[i];
-                
-                if ( waitingPlayer.data.gs_id == playerGsId ){
-                    clientList.remove( waitingPlayer.data.gc_id );
-                    
-                    if( waitingList.find(waitingPlayer.data.gc_id) )
-                      waitingList.broadcast( "QUEUE_LIST", JSON.stringify( waitingList.getAllData() ) );
-
-                    waitingList.remove( waitingPlayer.data.gc_id );
-                    console.log("client: [ " + waitingPlayer.data.gc_id + " ] desconectado. " + clientList.length()  ); 
-                    break;  
-                }                                        
+            if( waitingList.find( playerGcId ) ){
+                waitingList.remove( playerGcId );
+                waitingList.broadcast( "QUEUE_LIST", JSON.stringify( waitingList.getAllData() ) );
             }
+
+            if( clientList.find( playerGcId ) ) {
+                console.log("player: [" + clientList.get( playerGcId ).data.name + "] id: [" + playerGcId +"] desconectou."); 
+                clientList.remove( playerGcId );
+            } 
+            else
+                throw("Erro ao disconectar player id: [" + playerGcId +"] desconectou.");
         });
 
+        socket.on( 'TURN_COMMANDS', function( msg ){
+
+            var turnCommand = JSON.parse(msg);
+
+            var playerGcId = getGameCoordinatorId(socket.id);
+
+            if( playerGcId ) {
+
+                var matchId = getPlayerMatchId( playerGcId );
+
+                if( matchId ){
+
+                    var match = matches.get(matchId);
+                    match.addPlayerTurnCommand( playerGcId, turnCommand);
+                    match.players.broadcast( "PLAYER_READY", playerGcId );
+
+                    if( match.playerTurnActions.length() == 4 ){
+                        clearTimeout( match.nextTurn );
+                        updateMatch( matchId );
+                    }
+
+                }
+                else
+                    throw("fudeu, nao achou um MATCH_ID referente a esse playerGcId");
+            } 
+            else
+                throw("fudeu, nao achou um ID do GC referente a esse GS ID do player");
+            
+        });
+
+        function getPlayerMatchId( playerId ){
+            var matchsArray = matches.getAll();
+
+            for (var i = 0; i < matchsArray.length; i++) {
+                var match = matchsArray[i];
+                if( match.players.find( playerId ) )
+                    return match.data.id;
+            }
+
+            throw ("ERROR: getPlayerMatchId() - Não existe nenhuma partida rolando que tenha o jogador-id: "+ playerId);     
+        }
+        
         socket.on('REGISTER', function( msg ){
 
             var playerObj = JSON.parse( msg );
@@ -124,10 +356,9 @@ function GameServer(name, ip, location, gameCoordinatorIp){
 
                     }
                     if( readyToPlay == 3 ) {
-                        //pega no banco de dados o ultimo id
-                        //var lastMatchId = database.getLastMatchId() +1;
+                        
                         waitingList.add( playerObj.data.gc_id, playerObj );
-                        startMatch(  );
+                        startMatch();
                         waitingList.clear();
                         console.log("QUEUE_LIST_LENGTH: " + waitingList.length() );
                     }       
@@ -141,11 +372,11 @@ function GameServer(name, ip, location, gameCoordinatorIp){
         var match   = matches.get( matchId );  
         
         match.execute();
-        match.players.broadcast( "UPDATE_MATCH", match.turn /* MATCH DATA */);
-        match.turn++;  
+        match.players.broadcast( "UPDATE_MATCH", match.data /* MATCH DATA */);
+        match.data.turn++;  
 
-        if( match.turn < 11 && match.stats != "finished" )
-            setTimeout( updateMatch.bind(this, matchId ), 5000 );
+        if( match.data.turn < 11 && match.stats != "finished" )
+            match.nextTurn = setTimeout( updateMatch.bind(this, matchId ), match.data.playerTurnTimeOut );
         else
             endMatch( match );
                
@@ -157,20 +388,24 @@ function GameServer(name, ip, location, gameCoordinatorIp){
         console.log("match [ " + match.id + " ] ended.");
         matches.remove( match.id );
         
-
     }
 
     function startMatch(){
 
         matchCount++;
-        // corrigir referencia perdida.
-        // var copiedObject = jQuery.extend(true, {}, originalObject);
-        matches.add( matchCount, new Match( matchCount, waitingList.clone() ) );
 
+        for (var key in waitingList.client) {
+            clientList.get(key).data.currentMatch = matchCount;
+        }
+
+        var match = new Match( matchCount, waitingList.clone() );
+        matches.add( matchCount, match );
+
+        waitingList.broadcast( "START_MATCH", JSON.stringify( match.data ) /* MATCH DATA */ );
+      
         updateMatch( matchCount );
 
         console.log("Começando partida N: " + matchCount );
-        waitingList.broadcast( "START_MATCH", JSON.stringify( {matchId: matchCount} ) /* MATCH DATA */ );
 
     }
 
