@@ -20,11 +20,34 @@ function Match(matchId, playersList){
     this.nextTurn;
     this.players = playersList;
     this.rocksAmmount = 8;
+    this.ignoreMovedPiecesArray = [];
 
     this.execute = function(){
-        //applyTurnActions();
+        this.applyTurnActions();
+        this.cleanTurnActions();        
         //checkLastPlayerStand();
-        console.log ("Executando turno [ " + this.data.turn + " ]  ...");
+        console.log ("Executando partida [ " + this.data.id + " ] turno [ " + this.data.turn + " ]  ...");
+    }
+
+    function getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    this.getRandomIntEmptyCell = function(minX, maxX, minY, maxY) {
+       
+        var flag = true;
+        var x,y,cell;
+                
+        while(flag){
+            x = Math.floor(Math.random() * (maxX - minX + 1)) + minX;
+            y = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
+            cell = this.data.table[ x ][ y ];
+            
+            if( cell.length == 0 )  
+                flag = false;  
+        }
+
+        return {x:x, y:y}
     }
 
     function checkLastPlayerStand(){
@@ -34,7 +57,7 @@ function Match(matchId, playersList){
         for( var i = 0; i < 8; i++ ){
             for( var j = 0; j < 8; j++ ){            
                 
-                if( table[i][j].length > 0 ){
+                if( this.data.table[i][j].length > 0 ){
                     var piece = getPiece(i,j);
                 
                     if(firstPlayer){
@@ -49,11 +72,37 @@ function Match(matchId, playersList){
 
     }
 
+    this.printTable = function(){
+        console.log(" === begin print === \n");
+        for( var i = 0; i < 8; i++ ){
+            var row = "";
+            for( var j = 0; j < 8; j++ ){            
+                var cell = this.data.table[i][j];
+                if( cell.length == 0 )
+                    row += "[    ] ";
+                else {
+                    var piece = cell[0];
+
+                    if(piece.type == "block")
+                        row += "[XXXX] ";
+                    else
+                        row += "[" + this.players.get( piece.playerId ).data.name.substr(0,4) + "] ";                    
+                }
+                    
+            }
+            console.log(row+"\n");
+            row = "";
+        }    
+        console.log(" === end print === \n");
+
+    }
+
     this.initialize = function(){
-        //createTable();
-        //randomizePlayersPositions();
-        //randomizeBlocksPositions();
-        this.data.playersList = this.players.getAllData();
+        this.createTable();
+        this.randomizeBlocksPositions();
+        this.randomizePlayersPositions();
+        //this.printTable();
+        this.data.playersList = this.players.getAllDataObj();
         this.data.stats = 'executing';
     }
 
@@ -61,73 +110,176 @@ function Match(matchId, playersList){
         this.playerTurnActions.add(playerId, turnCommand);    
     }
 
-    function createTable(){}
-    function randomizePlayersPositions(){}
-    function randomizeBlocksPositions(){}
+    this.createTable = function(){
+        
+        this.data.table = [];
+
+        for( var i = 0; i < 8; i++ ){
+        
+            this.data.table[i] = [];
+        
+            for( var j = 0; j < 8; j++ ){            
+                this.data.table[i][j] = [];
+            }
+        }    
+    }
+
+     this.randomizePlayersPositions = function(){
+
+        var lookingAtArray = ["left", "right", "up", "down"];
+        var colors = ["red", "green", "blue", "yellow"];
+        var count = 0;
+
+        for ( var key in this.players.client ) {
+
+            var player = this.players.get(key); 
+            
+            var randomColorPos = getRandomInt(0, colors.length);
+            var randomColor = colors[ randomColorPos ];
+            colors.splice(randomColorPos, 1);
+
+            player.data.color = randomColor;
+
+            for (var i = 0; i < 3; i++) {
+                var piece = {
+                                type: 'player',
+                                playerId: key,
+                                playerName: player.data.name,
+                                color: randomColor,
+                                lookingAt: lookingAtArray[getRandomInt(0, lookingAtArray.length)]
+                            }
+                
+                var position = {};
+
+                if(count == 0)
+                    position = this.getRandomIntEmptyCell(0, 3, 0, 3);
+                if(count == 1)
+                    position = this.getRandomIntEmptyCell(0, 3, 4, 7);
+                if(count == 2)
+                    position = this.getRandomIntEmptyCell(4, 7, 0, 3);
+                if(count == 3)
+                    position = this.getRandomIntEmptyCell(4, 7, 4, 7);
+
+                 this.data.table[position.x][position.y].push(piece);     
+            } //end if 3 pieces creation
+            count++;
+        }//end players array
+    } //end function
     
-    function solveConflicts(){
+     this.randomizeBlocksPositions = function(){   
+
+        /*  xy xy xy xy     xy xy xy xy
+            00 01 02 03     04 05 06 07
+            10 11 12 13     14 15 16 17
+            20 21 22 23     24 25 26 27
+            30 31 32 33     34 35 36 37
+        
+        
+            40 41 42 43     44 45 46 47
+            50 51 52 53     54 55 56 57
+            60 61 62 63     64 65 66 67
+            70 71 72 73     74 75 76 77
+        */
+
+        this.data.table[ getRandomInt(0, 3) ][ getRandomInt(0, 3) ].push( {type:"block"} );
+        this.data.table[ getRandomInt(0, 3) ][ getRandomInt(0, 3) ].push( {type:"block"} );
+        
+        this.data.table[ getRandomInt(0, 3) ][ getRandomInt(4, 7) ].push( {type:"block"} );
+        this.data.table[ getRandomInt(0, 3) ][ getRandomInt(4, 7) ].push( {type:"block"} );
+
+        this.data.table[ getRandomInt(4, 7) ][ getRandomInt(0, 3) ].push( {type:"block"} );
+        this.data.table[ getRandomInt(4, 7) ][ getRandomInt(0, 3) ].push( {type:"block"} );
+
+        this.data.table[ getRandomInt(4, 7) ][ getRandomInt(4, 7) ].push( {type:"block"} );
+        this.data.table[ getRandomInt(4, 7) ][ getRandomInt(4, 7) ].push( {type:"block"} );
+
+    }
+    
+    this.solveConflicts = function(){
         for( var i = 0; i < 8; i++ ){
             for( var j = 0; j < 8; j++ ){            
-                if( table[i][j].length > 1 )
-                    solveConflict(i,j);
+                if( this.data.table[i][j].length > 1 )
+                    this.solveConflictRandomly(i,j);
             }
         }
     }
 
-    function solveConflict(i, j){
-        //var piecesArray = table[i][j];
+    this.solveConflictRandomly = function (i, j){
+        var piecesArray = this.data.table[i][j];
+        var random = getRandomInt(0, piecesArray.length)
+        var piece = piecesArray.splice(random, 1)[0];
+
+        this.data.table[i][j] = [];
+        this.data.table[i][j].push(piece);
     }
 
-    function applyTurnActions(){  
+     this.applyTurnActions = function(){  
         // execute 3 actions per turn
         for( var k = 0; k < 3; k++ ) {
              
-            for ( var playerId in this.playerTurnActions ) {              
+            for ( var playerId in this.playerTurnActions.client ) {              
                 
-                var playerActions = this.playerTurnActions[playerId];
+                var playerActions = this.playerTurnActions.get(playerId);
 
                 if( playerActions != undefined ){
 
-                    var action = this.playerTurnActions[playerId][k]; 
+                    var action = playerActions[k]; 
                     if( action != undefined )
-                     tryMovePlayerPieces( playerId, i, j, action );
+                        this.findPlayerPiece( playerId, action );
 
                 }
             }
-            solveConflicts();
+            this.solveConflicts();
         } 
-        cleanTurnActions();
+        this.cleanTurnActions();
     } 
 
-    function cleanTurnActions(){
-        this.playerTurnActions.clean();
+    this.cleanTurnActions = function(){
+        this.playerTurnActions.clear();
     }
 
-    function tryMovePlayerPieces(playerId, i, j, action){
+    this.findPlayerPiece = function(playerId, action){
         for( var i = 0; i < 8; i++ ){
             for( var j = 0; j < 8; j++ ){
-                
-                var piece = getPiece(i, j);
-                if( piece.playerId == playerId )
-                    tryMovePiece(i, j, action);
-
+                // verifica se foi uma peça movida pra frente
+                if( !this.isMovedPiece() ){
+                    var piece = this.getPiece(i, j);
+                    if( piece && piece.playerId == playerId )
+                        this.tryMovePiece(i, j, action);
+                }
             }
         }
+        // remove da lista todas as peças movidas, porque já pegamos todas.
+        this.ignoreMovedPiecesArray = [];
     }
 
-    function isOutOfTable(i,j){
+    this.isMovedPiece = function(i, j){
+        for (var i = 0; i < this.ignoreMovedPiecesArray.length; i++) {
+            var element = this.ignoreMovedPiecesArray[i];
+            if( (element.x == i) && ( element.y == j ) )
+                return true;
+        }    
+        return false;
+    }
+
+    function isOutOfTable(i, j){
         if(i < 0 || i > 7 || j < 0 || j > 7)
             return true;
         return false;    
     }
 
-    function getPiece(i,j){
-        return table[i][j][0]
+    this.getPiece = function(i, j){
+        var cell = this.data.table[i][j];
+
+        if( cell.length == 1 )
+            return cell[0];
+        else
+            return null    
     }
 
-    function tryMovePiece(i, j, action){
+    this.tryMovePiece = function(i, j, action){
 
-        var piece = getPiece(i, j);
+        var piece = this.getPiece(i, j);
 
         // se é uma rotação, apenas muda a variável da peça
         if( action.type == "rotate"){
@@ -162,20 +314,20 @@ function Match(matchId, playersList){
             var next_j;
 
             if( action.value == "left"){
-                next_i = i-1;
-                next_j = j;    
+                next_i = i;
+                next_j = j-1;    
             }
             if( action.value == "right"){
-                next_i = i+1;
-                next_j = j;
-            }
-            if( action.value == "down"){
                 next_i = i;
                 next_j = j+1;
             }
+            if( action.value == "down"){
+                next_i = i+1;
+                next_j = j;
+            }
             if( action.value == "up"){
-                next_i = i;
-                next_j = j-1;
+                next_i = i-1;
+                next_j = j;
             }
 
             // se a posição de movimento desejada não é fora do tabuleiro
@@ -184,15 +336,19 @@ function Match(matchId, playersList){
                 piece.lastPosition_x = i;
                 piece.lastPosition_y = j;
 
-                var next_piece = getPiece(next_i, next_j);
+                var next_piece = this.getPiece(next_i, next_j);
 
-                // se a posição desejada não é uma pedra
-                if( next_piece.type != "rock" ) {
-                    table[next_i][next_j].push( piece );
+                // se celula vazia, nao eh bloco, a posição desejada não é uma pedra
+                // rechecar / fazer duas vezes.
+                if( !next_piece ){
+                    if( next_piece.type != "block" && (piece.playerId != next_piece.playerId) ) {
+                        this.data.table[next_i][next_j].push( piece );
+                        this.data.table[i][j] = [];
+                        this.ignoreMovedPiecesArray.push( {x:next_i, y:next_j} );
+                    }
                 }
-                
             }
-
+            
         }
     }
 
@@ -372,11 +528,11 @@ function GameServer(name, ip, location, gameCoordinatorIp){
         var match   = matches.get( matchId );  
         
         match.execute();
-        match.players.broadcast( "UPDATE_MATCH", match.data /* MATCH DATA */);
+        match.players.broadcast( "UPDATE_MATCH", JSON.stringify( match.data ) /* MATCH DATA */);
         match.data.turn++;  
 
         if( match.data.turn < 11 && match.stats != "finished" )
-            match.nextTurn = setTimeout( updateMatch.bind(this, matchId ), match.data.playerTurnTimeOut );
+            match.nextTurn = setTimeout( updateMatch.bind(this, matchId), match.data.playerTurnTimeOut );
         else
             endMatch( match );
                
@@ -384,7 +540,7 @@ function GameServer(name, ip, location, gameCoordinatorIp){
 
     function endMatch( match ){
 
-        match.players.broadcast( "END_MATCH", match.turn /* MATCH DATA */); 
+        match.players.broadcast( "END_MATCH", JSON.stringify( match.data ) /* MATCH DATA */); 
         console.log("match [ " + match.id + " ] ended.");
         matches.remove( match.id );
         

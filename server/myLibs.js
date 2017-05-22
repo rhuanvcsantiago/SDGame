@@ -56,7 +56,17 @@ function ConnectionList(){
         }
 
         return array;
-    }   
+    }  
+
+    this.getAllDataObj = function(evt, msg){        
+        var obj = {};
+        
+        for (var key in this.client) {
+            obj[key] = this.client[key].data;         
+        }
+
+        return obj;
+    } 
 
     this.clone = function(){
         var list = new ConnectionList();

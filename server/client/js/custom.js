@@ -210,17 +210,22 @@ function setPlayer_GameServer_SocketsEvents(){
     });
 
     _PLAYER.socket.gameServer.on('UPDATE_MATCH', function(msg){
-
-        
-        //var matchData = JSON.parse(msg);
+        var matchData = JSON.parse(msg);
+        _matchData = matchData; 
 
         $(".move_button").removeAttr("disabled"); 
         $("#commitCommandsButton").removeAttr("disabled"); 
         $("#playerListReady").children().css("background-color", "#D3D3D3"); 
+        $("#turnoNumber").text(matchData.turn);
 
-        //console.log("TURNO [" + matchData.turn + "] Iniciado. 30 segundos para jogar");
-        console.log(msg);   
+        cleanCommands();
+        $("#playerCommands").css( "color", "red" );
+        $("#playerCommands").text( "nenhum comando enviado nesse turno ainda." );
 
+        console.log("TURNO [" + matchData.turn + "] Iniciado. 30 segundos para jogar"); 
+        console.log(matchData);
+        printTable(matchData.table);
+        drawTable(matchData.table);
         refreshCountDown();
 
     });
@@ -233,7 +238,8 @@ function setPlayer_GameServer_SocketsEvents(){
     });
 
     _PLAYER.socket.gameServer.on('END_MATCH', function(msg){
-        console.log("end");
+        //var matchData = JSON.parse(msg);
+        console.log("endData" + msg);
         setTimeout( function(){ setScene( _SCENE_SERVER_LIST ); }, 10000 );
     });
 
@@ -301,7 +307,9 @@ function addCommand(type, value){
 function cleanCommands(){
     $(".move_button").removeAttr("disabled");  
     _playerCommands = []; 
-    showCommands();
+    $("#playerCommands").css( "color", "red" );
+    $("#playerCommands").text( "nenhum comando enviado nesse turno ainda." );
+    //showCommands();
 }
 
 function showCommands(){
@@ -313,6 +321,7 @@ function showCommands(){
         string += " ("+ (index+1) + ") " + element.type + "->" + element.value + " ";
     }
 
+    $("#playerCommands").css( "color", "gray" );
     $("#playerCommands").text( string );
 
 }
@@ -320,25 +329,101 @@ function showCommands(){
 function commitCommands(){
 
     _PLAYER.socket.gameServer.emit("TURN_COMMANDS", JSON.stringify( _playerCommands ) );
-    cleanCommands();
-
+    
+    $("#playerCommands").css( "color", "green" );
+    $("#playerCommands").text( "comandos enviados" );
+    
     $(".move_button").attr("disabled","disabled");
     $("#commitCommandsButton").attr("disabled","disabled");
 
 }
 
+var _countDownTime = 30;
+var _lastInterval;
 function refreshCountDown(){
+    clearInterval(_lastInterval);
+    _countDownTime = 30;
+    _lastInterval = setInterval(function() {
+        
+        $("#countDown").text(_countDownTime);
+        _countDownTime--;
+        if( _countDownTime < 0 )
+            _countDownTime = 0
 
+    }, 1000 );
 }
 
 function createPlayerReadyMenu(playerList){
     
     $("#playerListReady").empty();
 
-    for(var i=0; i<playerList.length; i++){
-        $("#playerListReady").append('<div id="waitingPlayer' + playerList[i].gc_id + '" class="col-3 waitingPlayer">' + playerList[i].name + '</div>');
+    for (var key in playerList) {
+        if (playerList.hasOwnProperty(key)) {
+            var player = playerList[key];
+            var id = "#waitingPlayer" + key;
+            $(id).css("background-color", player.color);
+            $("#playerListReady").append('<div id="waitingPlayer' + key + '" class="col-3 waitingPlayer">' + player.name + '</div>');
+        }
     }
 
 }
+
+var _matchData;
+
+function printTable(table){
+    console.log(" === begin print === \n");
+    for( var i = 0; i < 8; i++ ){
+        var row = "";
+        for( var j = 0; j < 8; j++ ){            
+            var cell = table[i][j];
+            if( cell.length == 0 )
+                row += "[    ] ";
+            else {
+                var piece = cell[0];
+
+                if(piece.type == "block")
+                    row += "[XXXX] ";
+                else
+                    row += "[" + _matchData.playersList[piece.playerId].name.substr(0,4) + "] ";                    
+            }
+                
+        }
+        console.log(row+"\n");
+        row = "";
+    }    
+    console.log(" === end print === \n");
+}
+
+function drawTable(table){
+    for( var i = 0; i < 8; i++ ){
+        for( var j = 0; j < 8; j++ ){            
+            
+            var cell = table[i][j];
+            if( cell.length < 1 )
+                $(cellTextId).html("&nbsp");
+            else {
+                var piece = cell[0];
+                var cellTextId = "#cell" + (i+1) + (j+1);
+                if(piece.type == "block")
+                    $(cellTextId).text("X");
+                else{
+                    var pieceText = "";
+                    if(piece.lookingAt == "right")
+                        pieceText = "►";
+                    if(piece.lookingAt == "left")
+                        pieceText = "◀";
+                    if(piece.lookingAt == "down")
+                        pieceText = "▼";
+                    if(piece.lookingAt == "up")
+                        pieceText = "▲";
+
+                    $(cellTextId).css("color", piece.color);    
+                    $(cellTextId).text(pieceText);
+                }
+            }
+        }
+    }    
+}
+
 
 initialize();
