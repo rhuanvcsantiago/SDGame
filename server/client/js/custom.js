@@ -63,6 +63,13 @@ function setPlayer_GameCoodinator_SocketsEvents(){
         
     });  
 
+    _PLAYER.socket.gameCoordinator.on('reconnect', function(msg){
+        
+        //setScene( _SCENE_SERVER_LIST );
+        //showInfo("info", "Reconnectado. Voltando pra lista de servidores");
+
+    });
+
     _PLAYER.socket.gameCoordinator.on('SERVER_LIST_UPDATE', function(msg){
         
         var serverList = JSON.parse( msg );
@@ -91,6 +98,8 @@ function setPlayer_GameCoodinator_SocketsEvents(){
         $("#buttonPlay").attr("disabled","disabled");
 
     });
+
+    
 
     _PLAYER.socket.gameCoordinator.on('reconnect_attempt', function(msg){
         
@@ -155,6 +164,8 @@ function setPlayer_GameServer_SocketsEvents(){
                          }
 
         this.emit( "REGISTER", JSON.stringify(playerObj) );
+
+        $(".BOTAO_ENTRAR").removeAttr("disabled"); 
 
     });
 
@@ -238,9 +249,14 @@ function setPlayer_GameServer_SocketsEvents(){
     });
 
     _PLAYER.socket.gameServer.on('END_MATCH', function(msg){
-        //var matchData = JSON.parse(msg);
-        console.log("endData" + msg);
-        setTimeout( function(){ setScene( _SCENE_SERVER_LIST ); }, 10000 );
+        var matchData = JSON.parse(msg);
+        console.log("PARTIDA " + matchData.id + " ENCERRADA endData");
+        
+        refreshCountDown(10);
+
+        setTimeout( function(){ 
+            setScene( _SCENE_SERVER_LIST ); 
+        }, 10000 );
     });
 
 }
@@ -340,9 +356,9 @@ function commitCommands(){
 
 var _countDownTime = 30;
 var _lastInterval;
-function refreshCountDown(){
+function refreshCountDown(time){
     clearInterval(_lastInterval);
-    _countDownTime = 30;
+    _countDownTime = time || 30;
     _lastInterval = setInterval(function() {
         
         $("#countDown").text(_countDownTime);
@@ -361,8 +377,25 @@ function createPlayerReadyMenu(playerList){
         if (playerList.hasOwnProperty(key)) {
             var player = playerList[key];
             var id = "#waitingPlayer" + key;
-            $(id).css("background-color", player.color);
+            $("#playerListReady").css("background-color", player.color);
             $("#playerListReady").append('<div id="waitingPlayer' + key + '" class="col-3 waitingPlayer">' + player.name + '</div>');
+              
+          //  $(id).css("background-color", player.color);  
+          //  var x = "";
+          //      x += '<div class="col-3">';
+          //      x +=    '<div class="row">';
+          //      x +=    '    <div id="waitingPlayer' + key + ' class="col-2" style="background-color:black">';
+          //      x +=    '        X';
+          //      x +=    '    </div>';
+          //      x +=    '    <div class="col-9">';
+          //      x +=            player.name;
+          //      x +=     '    </div>' ;
+          //      x +=    '</div>';
+          //      x += '</div>';
+
+          // $("#playerListReady").append(x); 
+          // $(id).css("background-color", player.color);    
+
         }
     }
 
@@ -394,19 +427,42 @@ function printTable(table){
     console.log(" === end print === \n");
 }
 
+function cleanTable(){
+
+    var cellTextId;
+    for( var i = 0; i < 8; i++ ){
+        for( var j = 0; j < 8; j++ ){
+            cellTextId = "#cell" + (i+1) + (j+1);
+            $(cellTextId).css("background-color", "gray"); 
+            $(cellTextId).css("color", "black"); 
+            $(cellTextId).html("&nbsp");
+        }   
+    }
+
+}
+
 function drawTable(table){
+    
+    cleanTable();
+
     for( var i = 0; i < 8; i++ ){
         for( var j = 0; j < 8; j++ ){            
             
             var cell = table[i][j];
-            if( cell.length < 1 )
+            var cellTextId = "#cell" + (i+1) + (j+1);
+
+            if( cell.length < 1 ) {
+                $(cellTextId).css("color", "black"); 
                 $(cellTextId).html("&nbsp");
-            else {
+            }
+            else if (cell.length == 1 ){
+                
                 var piece = cell[0];
-                var cellTextId = "#cell" + (i+1) + (j+1);
+                
                 if(piece.type == "block")
-                    $(cellTextId).text("X");
-                else{
+                    $(cellTextId).css("background-color", "black");
+
+                else {
                     var pieceText = "";
                     if(piece.lookingAt == "right")
                         pieceText = "►";
@@ -419,7 +475,9 @@ function drawTable(table){
 
                     $(cellTextId).css("color", piece.color);    
                     $(cellTextId).text(pieceText);
-                }
+                }     
+            } else {
+                $(cellTextId).text(cell.length);
             }
         }
     }    

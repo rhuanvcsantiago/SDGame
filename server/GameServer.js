@@ -134,7 +134,7 @@ function Match(matchId, playersList){
 
             var player = this.players.get(key); 
             
-            var randomColorPos = getRandomInt(0, colors.length);
+            var randomColorPos = getRandomInt(0, colors.length-1);
             var randomColor = colors[ randomColorPos ];
             colors.splice(randomColorPos, 1);
 
@@ -146,7 +146,7 @@ function Match(matchId, playersList){
                                 playerId: key,
                                 playerName: player.data.name,
                                 color: randomColor,
-                                lookingAt: lookingAtArray[getRandomInt(0, lookingAtArray.length)]
+                                lookingAt: lookingAtArray[getRandomInt(0, lookingAtArray.length-1)]
                             }
                 
                 var position = {};
@@ -242,7 +242,7 @@ function Match(matchId, playersList){
         for( var i = 0; i < 8; i++ ){
             for( var j = 0; j < 8; j++ ){
                 // verifica se foi uma peça movida pra frente
-                if( !this.isMovedPiece() ){
+                if( !this.isMovedPiece(i, j) ){
                     var piece = this.getPiece(i, j);
                     if( piece && piece.playerId == playerId )
                         this.tryMovePiece(i, j, action);
@@ -253,10 +253,10 @@ function Match(matchId, playersList){
         this.ignoreMovedPiecesArray = [];
     }
 
-    this.isMovedPiece = function(i, j){
+    this.isMovedPiece = function(x, y){
         for (var i = 0; i < this.ignoreMovedPiecesArray.length; i++) {
             var element = this.ignoreMovedPiecesArray[i];
-            if( (element.x == i) && ( element.y == j ) )
+            if( (element.x == x) && ( element.y == y ) )
                 return true;
         }    
         return false;
@@ -274,7 +274,7 @@ function Match(matchId, playersList){
         if( cell.length == 1 )
             return cell[0];
         else
-            return null    
+            return null;    
     }
 
     this.tryMovePiece = function(i, j, action){
@@ -287,27 +287,31 @@ function Match(matchId, playersList){
                 if( piece.lookingAt == "right" )
                     piece.lookingAt = "down";
 
-                if( piece.lookingAt == "down" )
+                else if( piece.lookingAt == "down" )
                     piece.lookingAt = "left";
 
-                if( piece.lookingAt == "left" )
+                else if( piece.lookingAt == "left" )
                     piece.lookingAt = "up";
 
-                if( piece.lookingAt == "up" )
+                else if( piece.lookingAt == "up" )
                     piece.lookingAt = "right";            
-            } else {
+            } else if (action.value == "left"){
                 if( piece.lookingAt == "right" )
                     piece.lookingAt = "up";
 
-                if( piece.lookingAt == "up" )
+                else if( piece.lookingAt == "up" )
                     piece.lookingAt = "left";
 
-                if( piece.lookingAt == "left" )
+                else if( piece.lookingAt == "left" )
                     piece.lookingAt = "down";
 
-                if( piece.lookingAt == "down" )
+                else if( piece.lookingAt == "down" )
                     piece.lookingAt = "right";  
             }
+
+            this.data.table[i][j] = [];
+            this.data.table[i][j].push( piece );
+
         } else { // se é um movimento, calcula qual a posicão.
 
             var next_i;
@@ -338,17 +342,15 @@ function Match(matchId, playersList){
 
                 var next_piece = this.getPiece(next_i, next_j);
 
-                // se celula vazia, nao eh bloco, a posição desejada não é uma pedra
-                // rechecar / fazer duas vezes.
-                if( !next_piece ){
-                    if( next_piece.type != "block" && (piece.playerId != next_piece.playerId) ) {
-                        this.data.table[next_i][next_j].push( piece );
-                        this.data.table[i][j] = [];
-                        this.ignoreMovedPiecesArray.push( {x:next_i, y:next_j} );
-                    }
+                // se é nulo bloco é nulo
+                if( (!next_piece) || ( (next_piece.type != "block") && (piece.playerId != next_piece.playerId) ) ){
+                    this.data.table[next_i][next_j].push( piece );
+                    this.data.table[i][j] = [];
+                    this.ignoreMovedPiecesArray.push( {x:next_i, y:next_j} );    
                 }
+                        
             }
-            
+
         }
     }
 
@@ -541,8 +543,8 @@ function GameServer(name, ip, location, gameCoordinatorIp){
     function endMatch( match ){
 
         match.players.broadcast( "END_MATCH", JSON.stringify( match.data ) /* MATCH DATA */); 
-        console.log("match [ " + match.id + " ] ended.");
-        matches.remove( match.id );
+        console.log("match [ " + match.data.id + " ] ended.");
+        matches.remove( match.data.id );
         
     }
 
@@ -572,7 +574,8 @@ function GameServer(name, ip, location, gameCoordinatorIp){
     
 }   
 
-var ip = "127.0.0.1";
+//var ip = "127.0.0.1";
+var ip = "172.17.26.56";
 var port = "3001";
 
 var adress = ip + ":" + port;
