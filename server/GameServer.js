@@ -127,7 +127,7 @@ function Match(matchId, playersList){
      this.randomizePlayersPositions = function(){
 
         var lookingAtArray = ["left", "right", "up", "down"];
-        var colors = ["red", "green", "blue", "yellow"];
+        var colors = ["red", "pink", "blue", "yellow"];
         var count = 0;
 
         for ( var key in this.players.client ) {
@@ -180,18 +180,26 @@ function Match(matchId, playersList){
             60 61 62 63     64 65 66 67
             70 71 72 73     74 75 76 77
         */
-
-        this.data.table[ getRandomInt(0, 3) ][ getRandomInt(0, 3) ].push( {type:"block"} );
-        this.data.table[ getRandomInt(0, 3) ][ getRandomInt(0, 3) ].push( {type:"block"} );
         
-        this.data.table[ getRandomInt(0, 3) ][ getRandomInt(4, 7) ].push( {type:"block"} );
-        this.data.table[ getRandomInt(0, 3) ][ getRandomInt(4, 7) ].push( {type:"block"} );
+        var position = this.getRandomIntEmptyCell(0, 3, 0, 3);
+        this.data.table[position.x][position.y].push( {type:"block"} ); 
+        position = this.getRandomIntEmptyCell(0, 3, 0, 3);
+        this.data.table[position.x][position.y].push( {type:"block"} );
 
-        this.data.table[ getRandomInt(4, 7) ][ getRandomInt(0, 3) ].push( {type:"block"} );
-        this.data.table[ getRandomInt(4, 7) ][ getRandomInt(0, 3) ].push( {type:"block"} );
+        position = this.getRandomIntEmptyCell(0, 3, 4, 7);
+        this.data.table[position.x][position.y].push( {type:"block"} );
+        position = this.getRandomIntEmptyCell(0, 3, 4, 7);
+        this.data.table[position.x][position.y].push( {type:"block"} );
 
-        this.data.table[ getRandomInt(4, 7) ][ getRandomInt(4, 7) ].push( {type:"block"} );
-        this.data.table[ getRandomInt(4, 7) ][ getRandomInt(4, 7) ].push( {type:"block"} );
+        position = this.getRandomIntEmptyCell(4, 7, 0, 3);
+        this.data.table[position.x][position.y].push( {type:"block"} );
+        position = this.getRandomIntEmptyCell(4, 7, 0, 3);
+        this.data.table[position.x][position.y].push( {type:"block"} );
+
+        position = this.getRandomIntEmptyCell(4, 3, 4, 7);
+        this.data.table[position.x][position.y].push( {type:"block"} );
+        position = this.getRandomIntEmptyCell(4, 7, 4, 7);
+        this.data.table[position.x][position.y].push( {type:"block"} );       
 
     }
     
@@ -199,18 +207,20 @@ function Match(matchId, playersList){
         for( var i = 0; i < 8; i++ ){
             for( var j = 0; j < 8; j++ ){            
                 if( this.data.table[i][j].length > 1 )
-                    this.solveConflictRandomly(i,j);
+                    this.solveConflictRandomly(i, j);
             }
         }
     }
 
     this.solveConflictRandomly = function (i, j){
+
         var piecesArray = this.data.table[i][j];
-        var random = getRandomInt(0, piecesArray.length)
+        var random = getRandomInt(0, piecesArray.length-1)
         var piece = piecesArray.splice(random, 1)[0];
 
         this.data.table[i][j] = [];
         this.data.table[i][j].push(piece);
+
     }
 
      this.applyTurnActions = function(){  
@@ -575,7 +585,7 @@ function GameServer(name, ip, location, gameCoordinatorIp){
 }   
 
 //var ip = "127.0.0.1";
-var ip = "172.17.26.56";
+var ip = "127.0.0.1";
 var port = "3001";
 
 var adress = ip + ":" + port;

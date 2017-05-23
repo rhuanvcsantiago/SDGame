@@ -226,7 +226,9 @@ function setPlayer_GameServer_SocketsEvents(){
 
         $(".move_button").removeAttr("disabled"); 
         $("#commitCommandsButton").removeAttr("disabled"); 
-        $("#playerListReady").children().css("background-color", "#D3D3D3"); 
+        
+        $("#playerListReady .col-2").css("background-color", "white"); 
+       
         $("#turnoNumber").text(matchData.turn);
 
         cleanCommands();
@@ -376,25 +378,22 @@ function createPlayerReadyMenu(playerList){
     for (var key in playerList) {
         if (playerList.hasOwnProperty(key)) {
             var player = playerList[key];
-            var id = "#waitingPlayer" + key;
-            $("#playerListReady").css("background-color", player.color);
-            $("#playerListReady").append('<div id="waitingPlayer' + key + '" class="col-3 waitingPlayer">' + player.name + '</div>');
+            var id = "#waitingPlayerName" + key;
               
-          //  $(id).css("background-color", player.color);  
-          //  var x = "";
-          //      x += '<div class="col-3">';
-          //      x +=    '<div class="row">';
-          //      x +=    '    <div id="waitingPlayer' + key + ' class="col-2" style="background-color:black">';
-          //      x +=    '        X';
-          //      x +=    '    </div>';
-          //      x +=    '    <div class="col-9">';
-          //      x +=            player.name;
-          //      x +=     '    </div>' ;
-          //      x +=    '</div>';
-          //      x += '</div>';
+            var x = "";
+                x += '<div class="col-3">';
+                x +=    '<div class="row">';
+                x +=    '    <div id="waitingPlayer' + key + '" class="col-2" style="background-color:white">';
+                x +=    '        X';
+                x +=    '    </div>';
+                x +=    '    <div id="waitingPlayerName' + key + '" class="col-9">';
+                x +=            player.name.substring(0, 6);
+                x +=     '    </div>' ;
+                x +=    '</div>';
+                x += '</div>';
 
-          // $("#playerListReady").append(x); 
-          // $(id).css("background-color", player.color);    
+          $("#playerListReady").append(x); 
+          $(id).css("background-color", player.color);    
 
         }
     }
