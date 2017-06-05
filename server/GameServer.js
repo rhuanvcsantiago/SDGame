@@ -18,7 +18,7 @@ function Match(matchId, playersList){
 
     this.playerTurnActions = new ConnectionList(); // [playerID] = array("right", "r_left", "botton");
     this.nextTurn;
-    this.players = playersList;
+    this.players = playersList || new ConnectionList();
     this.rocksAmmount = 8;
     this.ignoreMovedPiecesArray = [];
 
@@ -364,8 +364,6 @@ function Match(matchId, playersList){
         }
     }
 
-    this.initialize();
-
 }
 // piece{playerId, type}
 // action{type, value}
@@ -397,6 +395,8 @@ function GameServer(name, ip, location, gameCoordinatorIp){
                            };
 
     this.gameCoordinator.socket = ioc( this.gameCoordinator.data.ip );
+
+    var gameCoordinatorSocket = this.gameCoordinator.socket;
     
     var loginObj = { ack: "server",
                      data: this.data }
@@ -404,7 +404,35 @@ function GameServer(name, ip, location, gameCoordinatorIp){
     this.gameCoordinator.socket.on('connect', function( socket ){
           
           this.emit("LOGIN", JSON.stringify( loginObj ) ); 
-          
+          // SAVING GAME STATE
+          setInterval( function(){
+                                    gameCoordinatorSocket.emit("SAVE_SERVER_STATE", JSON.stringify( matches.getAllData() ));
+                                 }, 15000 );   
+    });
+
+    this.gameCoordinator.socket.on( 'RESTORE_SERVER_STATE', function( msg ){
+            var matchesBackup = JSON.parse(msg);
+            matchCount = -1;
+
+            for (var i = 0; i < matchesBackup.length; i++) {
+                var matchBck = matchesBackup[i];
+                
+                if( matchBck.id > matchCount)
+                    matchCount = matchBck.id;
+
+                var match = new Match( matchBck.id );
+                match.data.table = matchBck.table;
+                match.data.playersList = matchBck.playersList;
+                match.data.turn = matchBck.turn;
+
+                matches.add( matchBck.id, match );
+            
+                updateMatch( matchCount );
+
+                console.log("Retomando partida N: " + matchBck.id );    
+            
+            }
+   
     });
 
     function getGameCoordinatorId(gameSerderId){
@@ -451,7 +479,7 @@ function GameServer(name, ip, location, gameCoordinatorIp){
 
             if( playerGcId ) {
 
-                var matchId = getPlayerMatchId( playerGcId );
+                var matchId = findPlayerMatchId( playerGcId );
 
                 if( matchId ){
 
@@ -465,13 +493,26 @@ function GameServer(name, ip, location, gameCoordinatorIp){
                     }
 
                 }
-                else
-                    throw("fudeu, nao achou um MATCH_ID referente a esse playerGcId");
+                //else
+                  //  throw("fudeu, nao achou um MATCH_ID referente a esse playerGcId");
             } 
-            else
-                throw("fudeu, nao achou um ID do GC referente a esse GS ID do player");
+            //else
+              //  throw("fudeu, nao achou um ID do GC referente a esse GS ID do player");
             
         });
+        
+
+        function findPlayerMatchId( playerId ){
+            var matchsArray = matches.getAll();
+
+            for (var i = 0; i < matchsArray.length; i++) {
+                var playerListLocal = matchsArray[i].data.playersList;
+                if( playerListLocal[playerId] != undefined )
+                        return matchsArray[i].data.id;
+            }
+            return false;
+            //throw ("ERROR: getPlayerMatchId() - Não existe nenhuma partida rolando que tenha o jogador-id: "+ playerId);     
+        }
 
         function getPlayerMatchId( playerId ){
             var matchsArray = matches.getAll();
@@ -482,7 +523,9 @@ function GameServer(name, ip, location, gameCoordinatorIp){
                     return match.data.id;
             }
 
-            throw ("ERROR: getPlayerMatchId() - Não existe nenhuma partida rolando que tenha o jogador-id: "+ playerId);     
+            return false;
+
+            //throw ("ERROR: getPlayerMatchId() - Não existe nenhuma partida rolando que tenha o jogador-id: "+ playerId);     
         }
         
         socket.on('REGISTER', function( msg ){
@@ -495,52 +538,72 @@ function GameServer(name, ip, location, gameCoordinatorIp){
 
             console.log("client: [ " + playerObj.data.gc_id + " ] conectado. total clientes: " + clientList.length() ); 
             
-            if( waitingList.length() < 3 ){
+            // Verifica se tem jogo ativo
+            var matchFoundedId =  findPlayerMatchId( playerObj.data.gc_id ); //getPlayerMatchId
+            
+            if( matchFoundedId ) {
 
-              waitingList.add( playerObj.data.gc_id, playerObj );
-              console.log("QUEUE_LIST_LENGTH: " + waitingList.length() );
-              waitingList.broadcast( "QUEUE_LIST", JSON.stringify( waitingList.getAllData() ) );
+                var match = matches.get(matchFoundedId);
+                match.players.add( playerObj.data.gc_id, playerObj );
+                playerObj.socket.emit("RETURN_TO_MATCH", JSON.stringify( match.data)) ;
 
-            } else {
-                if( waitingList.length() == 3){
-                    
-                    // VERIFY IF EVERYONE IS ALIVE
-                    console.log("preparing to start match, checking players...");
-                    var readyToPlay = 0;
-                    var waitingArray = waitingList.getAll();
+            }
 
-                    for( var i=0; i< waitingArray.length; i++ ){
+            else { // se nao tem jogo em aberto
+                if( waitingList.length() < 3 ){
 
-                        var waitingPlayer = waitingArray[i];
+                waitingList.add( playerObj.data.gc_id, playerObj );
+                console.log("QUEUE_LIST_LENGTH: " + waitingList.length() );
+                waitingList.broadcast( "QUEUE_LIST", JSON.stringify( waitingList.getAllData() ) );
+
+                } else {
+                    if( waitingList.length() == 3){
                         
-                        if ( clientList.find( waitingPlayer.data.gc_id ) )
-                            readyToPlay++;
-                        else {
-                            //remove cliente da lista
-                            waitingPlayer.socket.emit("REMOVED_FROM_QUEUE");
-                            waitingList.remove( waitingPlayer.data.gc_id ); 
-                            break;                           
+                        // VERIFY IF EVERYONE IS ALIVE
+                        console.log("preparing to start match, checking players...");
+                        var readyToPlay = 0;
+                        var waitingArray = waitingList.getAll();
+
+                        for( var i=0; i< waitingArray.length; i++ ){
+
+                            var waitingPlayer = waitingArray[i];
+                            
+                            if ( clientList.find( waitingPlayer.data.gc_id ) )
+                                readyToPlay++;
+                            else {
+                                //remove cliente da lista
+                                waitingPlayer.socket.emit("REMOVED_FROM_QUEUE");
+                                waitingList.remove( waitingPlayer.data.gc_id ); 
+                                break;                           
+                            }
+
                         }
-
+                        if( readyToPlay == 3 ) {
+                            
+                            waitingList.add( playerObj.data.gc_id, playerObj );
+                            startMatch();
+                            waitingList.clear();
+                            console.log("QUEUE_LIST_LENGTH: " + waitingList.length() );
+                        }       
                     }
-                    if( readyToPlay == 3 ) {
-                        
-                        waitingList.add( playerObj.data.gc_id, playerObj );
-                        startMatch();
-                        waitingList.clear();
-                        console.log("QUEUE_LIST_LENGTH: " + waitingList.length() );
-                    }       
                 }
             }
         });   
 
     });  
-
+    
     function updateMatch( matchId ){
+
+        //backup de partidas
+        
+
         var match   = matches.get( matchId );  
         
         match.execute();
-        match.players.broadcast( "UPDATE_MATCH", JSON.stringify( match.data ) /* MATCH DATA */);
+        
+        if(match.players)
+            match.players.broadcast( "UPDATE_MATCH", JSON.stringify( match.data ) /* MATCH DATA */);
+        
         match.data.turn++;  
 
         if( match.data.turn < 11 && match.stats != "finished" )
@@ -567,6 +630,7 @@ function GameServer(name, ip, location, gameCoordinatorIp){
         }
 
         var match = new Match( matchCount, waitingList.clone() );
+        match.initialize();
         matches.add( matchCount, match );
 
         waitingList.broadcast( "START_MATCH", JSON.stringify( match.data ) /* MATCH DATA */ );
@@ -582,6 +646,7 @@ function GameServer(name, ip, location, gameCoordinatorIp){
     });
 
     
+    
 }   
 
 //var ip = "127.0.0.1";
@@ -591,4 +656,6 @@ var port = "3001";
 var adress = ip + ":" + port;
 
 var gameServer = new GameServer("server01Rhuan", adress, "America", "http://127.0.0.1:3000");
+
+
 

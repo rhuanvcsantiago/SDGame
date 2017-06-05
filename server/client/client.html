@@ -54,15 +54,36 @@
             </div>
 
             <div id="start" class="container">
-                
-                <br />
-                <h3 class="text-center"> Lista de servidores: </h3>
-                <br />
-                <div id="serverList" class="container">
-                    lista vazia
-                </div>
-                <br />
-                
+                <div class="row">
+                    <div class="col-12">
+                        <div class="row text-center" id="serverList">
+                        </div>    
+                    </div>
+               </div> 
+               <div class="row" id="chat">
+                    <div class="col-12">
+                        <div class="row" id="chatWrapper">
+                            <div id="chatWindowWrapper" class="col-8" style="background-color:#ffffe6; overflow-y:scroll">
+                                #CHAT
+                                <div class="row">
+                                    <div class="col-12" id="chatWindow" >
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-4" style="background-color:#e0e0eb;">
+                                #LIST OF PLAYERS
+                                <div class="row">
+                                    <div class="col-12" id="chatPlayerList" style="overflow-y:scroll;">
+                                    </div>
+                                </div>    
+                                
+                            </div>
+                        </div>
+                        <div class="row">
+                                <input id="chatInput" type="text" style="width:100%" />
+                        </div>
+                    </div>
+                </div>      
             </div>
 
             <div id="match" class="container">

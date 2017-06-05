@@ -75,6 +75,13 @@ function setPlayer_GameCoodinator_SocketsEvents(){
         var serverList = JSON.parse( msg );
         updateServerList(serverList);
         
+    }); 
+
+    _PLAYER.socket.gameCoordinator.on('CLIENT_LIST_UPDATE', function(msg){
+        
+        var clientList = JSON.parse( msg );
+        updateClientList(clientList);
+        
     });  
 
     _PLAYER.socket.gameCoordinator.on('connect', function(msg){
@@ -90,6 +97,14 @@ function setPlayer_GameCoodinator_SocketsEvents(){
         showInfo("warning", "Erro de conexão com o servidor. Tipo de erro: " + msg);
 
     });  
+    
+
+    _PLAYER.socket.gameCoordinator.on('CHAT_MESSAGE_UPDATE', function(msg){
+        
+        
+        $("#chatWindow").append("<p>"+msg+"</p>");
+
+    });
 
     _PLAYER.socket.gameCoordinator.on('disconnect', function(msg){
         
@@ -99,8 +114,6 @@ function setPlayer_GameCoodinator_SocketsEvents(){
 
     });
 
-    
-
     _PLAYER.socket.gameCoordinator.on('reconnect_attempt', function(msg){
         
         showInfo("info","Tentativas de reconexão: " + msg);
@@ -109,14 +122,37 @@ function setPlayer_GameCoodinator_SocketsEvents(){
 
 }
 
+function updateClientList(clientList){
+
+    $("#chatPlayerList").empty();
+
+    for(var i=0; i<clientList.length; i++){
+        
+        var text = '<div class="row clientNameInList" >'+
+                        '<div class="col-xs-2">' +
+                            "&nbsp" + (i+1) + " - &nbsp" +
+                        '</div>' +
+                        '<div class="col-xs-12" style="overflow:auto">' +
+                            clientList[i].name;
+                        '</div>' +
+                    '</div>';
+        
+        $("#chatPlayerList").append(text);        
+    }
+
+}
+
 function updateServerList(serverList){
 
     $("#serverList").empty();
   
-    for(var i=0; i<serverList.length; i++){
-        $("#serverList").append('<div id="'+serverList[i].name+'" class="serverBox"> <ul><li>'+serverList[i].name+'</li><li>'+serverList[i].location+'</li><li class="serverIp">'+serverList[i].ip+'</li></ul> <button type="button" class="BOTAO_ENTRAR btn btn-danger btn-sm" value="' + serverList[i].name + '"> ENTRAR </button></div>');        
+    if(serverList.length == 0){
+         $("#serverList").append("<h3 style='color: red'> nenhum servidor online!</h3>");
+    } else {
+        for(var i=0; i<serverList.length; i++){
+            $("#serverList").append('<div id="'+serverList[i].name+'" style="display: inline-block; "class="col-xs-4 serverBox"> <ul><li>'+serverList[i].name+'</li><li>'+serverList[i].location+'</li><li class="serverIp">'+serverList[i].ip+'</li></ul> <button type="button" class="BOTAO_ENTRAR btn btn-danger btn-sm" value="' + serverList[i].name + '"> ENTRAR </button></div>');        
+        }
     }
-  
     
 }
 
@@ -166,6 +202,34 @@ function setPlayer_GameServer_SocketsEvents(){
         this.emit( "REGISTER", JSON.stringify(playerObj) );
 
         $(".BOTAO_ENTRAR").removeAttr("disabled"); 
+
+    });
+
+    _PLAYER.socket.gameServer.on('RETURN_TO_MATCH', function(msg){
+        
+        setScene( _SCENE_MATCH_RUNNING );
+
+        var matchData = JSON.parse(msg);
+        _matchData = matchData; 
+
+        $(".move_button").removeAttr("disabled"); 
+        $("#commitCommandsButton").removeAttr("disabled"); 
+        
+        $("#playerListReady .col-2").css("background-color", "white"); 
+       
+        $("#turnoNumber").text(matchData.turn);
+
+        cleanCommands();
+        $("#playerCommands").css( "color", "red" );
+        $("#playerCommands").text( "nenhum comando enviado nesse turno ainda." );
+
+        console.log("TURNO [" + matchData.turn + "] Iniciado. 30 segundos para jogar"); 
+        console.log(matchData);
+        printTable(matchData.table);
+        drawTable(matchData.table);
+
+        refreshCountDown();
+        
 
     });
 
@@ -481,6 +545,21 @@ function drawTable(table){
         }
     }    
 }
+
+$("#chatInput").on( "keypress", function(event){
+
+    
+    if(event.which == 13){
+        _PLAYER.socket.gameCoordinator.emit("CHAT_MESSAGE", $("#chatInput").val() );
+        $("#chatInput").val("");
+
+        var objDiv = document.getElementById("chatWindowWrapper");
+        objDiv.scrollTop = objDiv.scrollHeight;
+
+    }
+
+
+} );
 
 
 initialize();

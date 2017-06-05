@@ -34,11 +34,10 @@ body{
 }
 
 .serverBox{
-    width: 180px;
-    height: 125px;
     background-color: black;
     color: white;
-    box-shadow: 0 0 9px 4px white;
+    margin-left:10px;
+    padding: 10px;
 }
 
 .tableCell{
@@ -51,3 +50,29 @@ body{
 .move_button{
     margin-bottom: 5px;
 }
+
+#chatWrapper{
+    height: 400px;
+}
+
+#serverList{
+    padding: 10px;
+}
+
+.testimonial-group > .row {
+  overflow-x: auto;
+  white-space: nowrap;
+  overflow: scroll;
+  overflow-x: scroll;
+  overflow-y:hidden;
+}
+.testimonial-group > .row > .col-xs-4 {
+  display: inline-block;
+  float: none;
+}
+
+.clientNameInList:hover{
+    background-color: #666699;
+    color:white;
+}
+

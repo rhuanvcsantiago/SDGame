@@ -31,6 +31,7 @@ function GameCoordinator(){
     
     var clientList = new ConnectionList();
     var serverList = new ConnectionList();
+    var serverBackups = {};
     
     io.on('connection', function( socket ){  
 
@@ -90,13 +91,17 @@ function GameCoordinator(){
                          }
                         
                 //sending server list         
-                socket.emit( "SERVER_LIST_UPDATE", JSON.stringify( serverList.getAllData() ) );         
+                socket.emit( "SERVER_LIST_UPDATE", JSON.stringify( serverList.getAllData() ) ); 
+                sendClientListToAllPlayers();        
 
             } else if( msgObj.ack == "server" ) {
 
                 serverList.add( socket.id, new GameServer(msgObj.data.name, msgObj.data.ip, msgObj.data.location, this) );  
                 console.log( "cliente [" +  socket.id + "] identificado como SERVER: [" +  msgObj.data.location + "]. total servers: " +  serverList.length() );
                 
+                if( serverBackups[msgObj.data.name] )
+                    socket.emit( "RESTORE_SERVER_STATE",  serverBackups[msgObj.data.name]); 
+
                 sendServerListToAllPlayers();
 
                 resObj = {
@@ -126,6 +131,7 @@ function GameCoordinator(){
                 // LANCAR FUNCAO QUE REMOVE CLIENTE APOS 30 segundos
                 clientList.remove(socket.id);
                 console.log( "cliente [ " +  socket.id + " ] desconectado. total clients: " + clientList.length() );
+                sendClientListToAllPlayers();
 
             } else {
                 if( serverList.get(socket.id) ){
@@ -140,11 +146,38 @@ function GameCoordinator(){
            console.log( eval(message) ); 
         });
 
+        socket.on('CHAT_MESSAGE', function( msg ){
+
+            var client = clientList.get(socket.id);
+            
+            if( client ){
+                sendChatMessageToAllPlayers(client.data.name + ": " + msg);
+            }
+
+        });
+
+        socket.on('SAVE_SERVER_STATE', function( msg ){
+
+            var server = serverList.get(socket.id);
+            serverBackups[server.data.name] = msg;
+            console.log("Saving server ["+server.data.name+"] state.");
+            //console.log("    server data: "+ msg);
+            
+        });
+
     });
 
     function sendServerListToAllPlayers(){
         clientList.broadcast( "SERVER_LIST_UPDATE", JSON.stringify( serverList.getAllData() ) );
-    }    
+    }   
+
+    function sendChatMessageToAllPlayers(message){
+        clientList.broadcast( "CHAT_MESSAGE_UPDATE", message );
+    } 
+
+    function sendClientListToAllPlayers(){
+        clientList.broadcast( "CLIENT_LIST_UPDATE", JSON.stringify( clientList.getAllData() ) );
+    }   
 
     http.listen(3000, function(){  
         console.log('servidor rodando em localhost:3000');
