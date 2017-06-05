@@ -650,7 +650,9 @@ function GameServer(name, ip, location, gameCoordinatorIp){
 }   
 
 //var ip = "127.0.0.1";
-var ip = "127.0.0.1";
+
+// SERVER IP - MODIFICAR
+var ip = "172.17.23.22";
 var port = "3001";
 
 var adress = ip + ":" + port;
