@@ -108,9 +108,11 @@ function setPlayer_GameCoodinator_SocketsEvents(){
 
     _PLAYER.socket.gameCoordinator.on('disconnect', function(msg){
         
-        setScene( _SCENE_PLAY );
-        showInfo("danger", "Desconnectado. Sua internet caiu ou o Servidor está offline?");
-        $("#buttonPlay").attr("disabled","disabled");
+        if(_PLAYER.socket.gameServer.disconnected ){
+            setScene( _SCENE_PLAY );
+            showInfo("danger", "Desconnectado. Sua internet caiu ou o Servidor está offline?");
+            $("#buttonPlay").attr("disabled","disabled");
+        }
 
     });
 
@@ -323,8 +325,15 @@ function setPlayer_GameServer_SocketsEvents(){
         refreshCountDown(10);
 
         setTimeout( function(){ 
-            setScene( _SCENE_SERVER_LIST ); 
+            if(_PLAYER.socket.gameCoordinator.disconnected)
+                setScene( _SCENE_PLAY ); 
+            else    
+                setScene( _SCENE_SERVER_LIST ); 
+            //ultima hora
+            _PLAYER.socket.gameServer.disconnect();
         }, 10000 );
+
+
     });
 
 }
