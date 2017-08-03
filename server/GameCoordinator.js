@@ -1,4 +1,4 @@
-var ConnectionList  = require('./server/myLibs.js');
+var ConnectionList  = require('./myLibs.js');
 var app     = require('express')();  
 var http    = require('http').Server(app);  
 var io      = require('socket.io')(http);
@@ -191,19 +191,19 @@ function GameCoordinator(){
     });
 
     app.get('/', function(req, res){  
-        res.sendFile(__dirname + '/server/client/client.html');
+        res.sendFile(__dirname + '/client/client.html');
     });
 
     app.get('*.js', function(req, res){ 
-        res.sendFile(__dirname + '/server/client/' + req.originalUrl );  
+        res.sendFile(__dirname + '/client/' + req.originalUrl );  
     });
 
     app.get('*.jpg', function(req, res){ 
-        res.sendFile(__dirname + '/server/client/' + req.originalUrl );  
+        res.sendFile(__dirname + '/client/' + req.originalUrl );  
     });
 
     app.get('*.css', function(req, res){ 
-        res.sendFile(__dirname + '/server/client/' + req.originalUrl );  
+        res.sendFile(__dirname + '/client/' + req.originalUrl );  
     });
 }
 
